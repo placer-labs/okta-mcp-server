@@ -75,11 +75,8 @@ async def okta_authorisation_flow(server: FastMCP) -> AsyncIterator[OktaAppConte
     else:
         logger.info("Initializing OktaAuthManager (authentication deferred to first tool call)")
         manager = OktaAuthManager()
-        try:
-            yield OktaAppContext(okta_auth_manager=manager)
-        finally:
-            logger.debug("Clearing Okta tokens")
-            manager.clear_tokens()
+        # Tokens stay in the keyring on shutdown so the next session can re-use them.
+        yield OktaAppContext(okta_auth_manager=manager)
 
 
 # --- Build the FastMCP instance based on transport mode ---

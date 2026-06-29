@@ -21,6 +21,8 @@ import requests
 from loguru import logger
 
 SERVICE_NAME = "OktaAuthManager"
+# Treat JWTs this close to expiry as expired, to absorb clock skew.
+_TOKEN_EXPIRY_SAFETY_MARGIN_SECONDS = 60
 
 
 @dataclass
@@ -327,15 +329,9 @@ class OktaAuthManager:
         if api_token:
             # Prefer reading the actual exp claim from the JWT so validity survives
             # process restarts (token_timestamp is in-memory and resets to 0).
-            try:
-                claims = jwt.decode(api_token, options={"verify_signature": False})
-                token_exp = claims.get("exp")
-                if token_exp and token_exp > time.time():
-                    logger.debug(f"Token is valid (exp in {token_exp - time.time():.0f}s)")
-                    return True
-                if token_exp:
-                    logger.info(f"Token JWT-expired {time.time() - token_exp:.0f}s ago")
-            except Exception:
+            if self._token_is_unexpired(api_token):
+                return True
+            if not self._is_jwt(api_token):
                 # Non-JWT token (opaque): fall back to timestamp-based check
                 token_age = time.time() - self.token_timestamp
                 if token_age < expiry_duration:
@@ -359,6 +355,39 @@ class OktaAuthManager:
                 await self.authenticate()
 
         return keyring.get_password(SERVICE_NAME, "api_token") is not None
+
+    @staticmethod
+    def _is_jwt(token: str) -> bool:
+        try:
+            jwt.decode(token, options={"verify_signature": False})
+        except jwt.DecodeError:
+            return False
+        return True
+
+    @staticmethod
+    def _token_is_unexpired(token: str) -> bool:
+        """Return True if ``token`` is a JWT whose ``exp`` claim is more than 60s in the future.
+
+        Opaque tokens (non-JWT), JWTs missing an ``exp`` claim, or JWTs that fail to decode
+        return False.
+        """
+        try:
+            claims = jwt.decode(token, options={"verify_signature": False})
+        except jwt.DecodeError:
+            return False
+
+        exp = claims.get("exp")
+        if exp is None:
+            logger.debug("JWT has no exp claim; treating as expired")
+            return False
+
+        seconds_remaining = exp - time.time()
+        if seconds_remaining > _TOKEN_EXPIRY_SAFETY_MARGIN_SECONDS:
+            logger.debug(f"Token is valid (exp in {seconds_remaining:.0f}s)")
+            return True
+
+        logger.info(f"Token expires in {seconds_remaining:.0f}s, within safety margin; treating as expired")
+        return False
 
     def clear_tokens(self):
         """Clear all stored tokens from keyring."""
