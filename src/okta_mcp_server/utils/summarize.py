@@ -294,3 +294,25 @@ def summarize_group_rules(rules: List[Any]) -> List[Dict[str, Any]]:
     """Summarize a list of GroupRule dicts."""
     return [summarize_group_rule(r) for r in rules]
 
+
+# ── Device Assurance ──────────────────────────────────────────
+
+_DEVICE_ASSURANCE_DROP_KEYS = {"_links", "links"}
+
+
+def summarize_device_assurance_policy(policy: Any) -> Dict[str, Any]:
+    """Return a device assurance policy without its HAL link metadata.
+
+    Every other field is kept: the set of compliance attributes differs per platform
+    and grows with the SDK, so an allow-list here would silently hide new checks.
+    """
+    if not isinstance(policy, dict):
+        # to_dict() omits unset fields, so an absent attribute reads as
+        # "not configured"; a full model dump would spell out every null.
+        policy = policy.to_dict() if hasattr(policy, "to_dict") else _obj_to_dict(policy)
+    return {k: v for k, v in policy.items() if k not in _DEVICE_ASSURANCE_DROP_KEYS}
+
+
+def summarize_device_assurance_policies(policies: List[Any]) -> List[Dict[str, Any]]:
+    """Summarize a list of device assurance policies."""
+    return [summarize_device_assurance_policy(p) for p in policies]

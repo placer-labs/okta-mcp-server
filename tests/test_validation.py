@@ -14,7 +14,12 @@ path traversal and injection attacks while allowing valid Okta IDs.
 
 import pytest
 
-from okta_mcp_server.utils.validation import InvalidOktaIdError, validate_okta_id
+from okta_mcp_server.utils.validation import (
+    InvalidOktaIdError,
+    _validate_os_version_string,
+    validate_okta_id,
+    validate_os_version_params,
+)
 
 
 class TestValidateOktaId:
@@ -159,3 +164,45 @@ class TestValidateOktaId:
         with pytest.raises(InvalidOktaIdError) as exc_info:
             validate_okta_id(malicious_id, "user_id")
         assert "forbidden" in str(exc_info.value).lower()
+
+
+class TestValidateOsVersion:
+    @pytest.mark.parametrize("version", ["14.2.1", "14.2.1.0", "0.0.0"])
+    def test_full_versions_accepted(self, version):
+        assert _validate_os_version_string(version) is None
+
+    def test_bare_major_is_android_only(self):
+        assert _validate_os_version_string("12", "ANDROID") is None
+        assert "X.Y.Z" in (_validate_os_version_string("12", "MACOS") or "")
+
+    def test_two_component_version_asks_rather_than_guesses(self):
+        error = _validate_os_version_string("13.3", "MACOS") or ""
+        assert "Incomplete OS version" in error
+        assert "13.3.0" in error and "Do NOT assume" in error
+
+    @pytest.mark.parametrize("version", ["sonoma", "14.x", "v14.2.1", "14..1"])
+    def test_junk_rejected(self, version):
+        assert _validate_os_version_string(version) is not None
+
+    def test_empty_version_is_not_validated(self):
+        assert _validate_os_version_string("") is None
+
+    @pytest.mark.asyncio
+    async def test_decorator_reads_nested_policy_data(self):
+        @validate_os_version_params("policy_data")
+        async def tool(policy_data):  # ruff: ignore[unused-async] - async path is what the decorator branches on
+            return {"called": True}
+
+        rejected = await tool({"platform": "MACOS", "osVersion": {"minimum": "14.2"}})
+        assert "Incomplete OS version" in rejected["error"]
+
+        accepted = await tool({"platform": "ANDROID", "osVersion": {"minimum": "12"}})
+        assert accepted == {"called": True}
+
+    @pytest.mark.asyncio
+    async def test_decorator_error_return_type_list(self):
+        @validate_os_version_params("version", error_return_type="list")
+        async def tool(version):  # ruff: ignore[unused-async] - async path is what the decorator branches on
+            return ["ok"]
+
+        assert (await tool("14.2"))[0].startswith("Error: Incomplete")
