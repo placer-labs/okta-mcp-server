@@ -125,14 +125,18 @@ def configure_telemetry() -> bool:
     except Exception as exc:  # pragma: no cover - optional
         logger.debug(f"telemetry: aiohttp client instrumentation skipped: {exc}")
 
-    # OAuth token introspection to Okta goes through httpx (authlib), not aiohttp,
-    # so instrument it too — otherwise the auth hot path is untraced.
-    try:
-        from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+    # OAuth token and introspection calls to Okta go through httpx (authlib),
+    # not aiohttp, so instrument it too — otherwise the auth hot path is
+    # untraced. FastMCP 4 moved to httpx2, which needs its own instrumentor;
+    # instrument whichever is installed.
+    for instrumentor_name in ("HTTPXClientInstrumentor", "HTTPX2ClientInstrumentor"):
+        try:
+            import opentelemetry.instrumentation.httpx as _otel_httpx
 
-        HTTPXClientInstrumentor().instrument()
-    except Exception as exc:  # pragma: no cover - optional
-        logger.debug(f"telemetry: httpx client instrumentation skipped: {exc}")
+            getattr(_otel_httpx, instrumentor_name)().instrument()
+            logger.debug(f"telemetry: {instrumentor_name} instrumented")
+        except Exception as exc:  # pragma: no cover - optional
+            logger.debug(f"telemetry: {instrumentor_name} skipped: {exc}")
 
     _install_loguru_trace_correlation()
 

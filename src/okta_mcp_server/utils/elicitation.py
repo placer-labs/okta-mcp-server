@@ -17,10 +17,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from fastmcp import Context
 from loguru import logger
 from mcp.server.elicitation import AcceptedElicitation, DeclinedElicitation
-from mcp.server.fastmcp import Context
-from mcp.shared.exceptions import McpError
+from mcp.shared.exceptions import MCPError
 from mcp.types import METHOD_NOT_FOUND
 from pydantic import BaseModel, Field
 
@@ -80,7 +80,10 @@ class ElicitationOutcome:
 def supports_elicitation(ctx: Context) -> bool:
     """Return ``True`` if the connected MCP client advertised elicitation support."""
     try:
-        session = ctx.request_context.session
+        request_context = ctx.request_context
+        if request_context is None:
+            return False
+        session = request_context.session
         if session.client_params and session.client_params.capabilities:
             return session.client_params.capabilities.elicitation is not None
     except Exception as exc:
@@ -151,7 +154,7 @@ async def elicit_or_fallback(
         )
 
     try:
-        result = await ctx.elicit(message=message, schema=schema)
+        result = await ctx.elicit(message=message, response_type=schema)
 
         if isinstance(result, AcceptedElicitation) and result.data:
             confirmed = getattr(result.data, "confirm", False)
@@ -164,7 +167,7 @@ async def elicit_or_fallback(
             logger.warning(f"Elicitation returned unexpected result: {result}")
             return ElicitationOutcome(confirmed=False, used_elicitation=True)
 
-    except McpError as exc:
+    except MCPError as exc:
         if exc.error.code == METHOD_NOT_FOUND:
             logger.info("Elicitation not supported by client (METHOD_NOT_FOUND)")
         else:
