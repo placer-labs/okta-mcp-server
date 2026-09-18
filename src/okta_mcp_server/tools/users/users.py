@@ -120,24 +120,37 @@ async def list_users(
 
 
 @mcp.tool()
-async def get_user_profile_attributes(ctx: Context | None = None):
-    """List all user profile attributes supported by your Okta org.
-    This is helpful in case you need to check if the user profile attribute is valid.
-    The prompt can contain non existent search terms, in which case we should seek clarification from the user
-    by listing most similar profile attributes.
+@validate_ids("user_id")
+async def get_user_profile_attributes(user_id: Optional[str] = None, ctx: Context | None = None):
+    """List the user profile attributes supported by your Okta org.
+
+    Use this to check whether a profile attribute name is valid before filtering or
+    searching on it. The prompt may contain an attribute that does not exist, in which
+    case list the most similar ones and ask the user which they meant.
+
+    The attribute set is read off one real user, so the values belong to whichever user
+    was sampled. To read a specific person's profile, use get_user instead.
+
+    Parameters:
+        user_id (str, optional): Read the attributes off this user (ID or login) instead
+            of an arbitrary one. Use this when the question is about a named person.
 
     Returns:
-        A list of user profile attributes.
+        A dict of user profile attributes.
     """
-    logger.info("Fetching user profile attributes")
+    logger.info(f"Fetching user profile attributes (user_id={user_id or 'sampled'})")
 
     manager = _resolve_manager(ctx)
 
     try:
         client = await get_okta_client(manager)
-        logger.debug("Fetching first user to extract profile attributes")
 
-        users, _, err = await client.list_users(limit=1)
+        if user_id:
+            user, _, err = await client.get_user(user_id)
+            users = [user] if user else []
+        else:
+            logger.debug("Fetching first user to extract profile attributes")
+            users, _, err = await client.list_users(limit=1)
 
         if err:
             logger.error(f"Okta API error while fetching profile attributes: {err}")
@@ -149,8 +162,8 @@ async def get_user_profile_attributes(ctx: Context | None = None):
             logger.debug(f"Profile attributes: {list(attributes.keys())}")
             return attributes
 
-        logger.warning("No users found in the organization")
-        return users  # no user has been created yet
+        logger.warning(f"No user found to read profile attributes from (user_id={user_id or 'sampled'})")
+        return []
     except ToolError:
         raise
     except Exception as e:

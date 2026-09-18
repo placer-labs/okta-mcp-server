@@ -50,6 +50,8 @@ async def list_groups(
         The search, filter, and q are performed on group profile attributes.
 
     Examples:
+        By name fragment, use q (there is no "query" parameter):
+        - list_groups(q="Engineering")
         For pagination:
         - First call: list_groups(search="profile.name sw \"Engineering\"")
         - Next page: list_groups(search="profile.name sw \"Engineering\"", after="cursor_value")
