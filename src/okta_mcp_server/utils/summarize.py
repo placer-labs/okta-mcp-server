@@ -29,10 +29,12 @@ def _obj_to_dict(obj: Any) -> Dict[str, Any]:
     if isinstance(obj, dict):
         return obj
     if hasattr(obj, "model_dump"):
+        # by_alias keys the dump the way the API does (camelCase), matching the
+        # field lists below; the snake_case default made them all miss.
         # warnings=False suppresses Pydantic serializer warnings for models that
         # were reconstructed leniently (see okta_compat) and therefore hold raw
         # enum strings / nested dicts instead of typed sub-models.
-        return obj.model_dump(warnings=False)
+        return obj.model_dump(by_alias=True, warnings=False)
     if hasattr(obj, "as_dict"):
         return obj.as_dict()
     if hasattr(obj, "__dict__"):
@@ -291,3 +293,26 @@ def summarize_group_rule(rule: Any) -> Dict[str, Any]:
 def summarize_group_rules(rules: List[Any]) -> List[Dict[str, Any]]:
     """Summarize a list of GroupRule dicts."""
     return [summarize_group_rule(r) for r in rules]
+
+
+# ── Device Assurance ──────────────────────────────────────────
+
+_DEVICE_ASSURANCE_DROP_KEYS = {"_links", "links"}
+
+
+def summarize_device_assurance_policy(policy: Any) -> Dict[str, Any]:
+    """Return a device assurance policy without its HAL link metadata.
+
+    Every other field is kept: the set of compliance attributes differs per platform
+    and grows with the SDK, so an allow-list here would silently hide new checks.
+    """
+    if not isinstance(policy, dict):
+        # to_dict() omits unset fields, so an absent attribute reads as
+        # "not configured"; a full model dump would spell out every null.
+        policy = policy.to_dict() if hasattr(policy, "to_dict") else _obj_to_dict(policy)
+    return {k: v for k, v in policy.items() if k not in _DEVICE_ASSURANCE_DROP_KEYS}
+
+
+def summarize_device_assurance_policies(policies: List[Any]) -> List[Dict[str, Any]]:
+    """Summarize a list of device assurance policies."""
+    return [summarize_device_assurance_policy(p) for p in policies]

@@ -60,7 +60,7 @@ _MFA_EVENT_TYPE_PATTERN = re.compile(
 )
 
 
-def _check_scope_error(err_or_exc: Any) -> Optional[str]:
+def check_logs_scope_error(err_or_exc: Any) -> Optional[str]:
     """Return a user-friendly scope-error message for 403 / insufficient_scope, else None."""
     err_str = str(err_or_exc)
     err_status = (
@@ -219,7 +219,7 @@ async def get_logs(
 
         if err:
             logger.error(f"Okta API error while retrieving system logs: {err}")
-            scope_msg = _check_scope_error(err)
+            scope_msg = check_logs_scope_error(err)
             if scope_msg:
                 raise ToolError(scope_msg)
             raise ToolError(f"Okta API error: {err}")
@@ -261,7 +261,7 @@ async def get_logs(
         raise
     except Exception as e:
         logger.error(f"Exception while retrieving system logs: {type(e).__name__}: {e}")
-        scope_msg = _check_scope_error(e)
+        scope_msg = check_logs_scope_error(e)
         if scope_msg:
             raise ToolError(scope_msg)
         raise ToolError(f"Exception: {e}") from e

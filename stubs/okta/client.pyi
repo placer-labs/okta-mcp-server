@@ -10,6 +10,7 @@ from typing import Any
 
 from okta.api_response import ApiResponse
 from okta.models.application import Application
+from okta.models.device_assurance import DeviceAssurance
 from okta.models.group import Group
 from okta.models.group_rule import GroupRule
 from okta.models.log_event import LogEvent
@@ -24,7 +25,9 @@ class Client:
     # ── Users ──────────────────────────────────────────────────────────────
     async def list_users(self, **kwargs: Any) -> tuple[list[User] | None, ApiResponse | None, OktaError]: ...
     async def get_user(self, user_id: str, **kwargs: Any) -> tuple[User | None, ApiResponse | None, OktaError]: ...
-    async def create_user(self, body: Any, **kwargs: Any) -> tuple[User | None, ApiResponse | None, OktaError]: ...
+    async def create_user(
+        self, body: Any, activate: bool | None = ..., **kwargs: Any
+    ) -> tuple[User | None, ApiResponse | None, OktaError]: ...
     async def update_user(
         self, user_id: str, body: Any, **kwargs: Any
     ) -> tuple[User | None, ApiResponse | None, OktaError]: ...
@@ -115,6 +118,23 @@ class Client:
     ) -> tuple[None, ApiResponse | None, OktaError]: ...
     async def deactivate_policy_rule(
         self, policy_id: str, rule_id: str, **kwargs: Any
+    ) -> tuple[None, ApiResponse | None, OktaError]: ...
+
+    # ── Device Assurance ───────────────────────────────────────────────────
+    async def list_device_assurance_policies(
+        self, **kwargs: Any
+    ) -> tuple[list[DeviceAssurance] | None, ApiResponse | None, OktaError]: ...
+    async def get_device_assurance_policy(
+        self, device_assurance_id: str, **kwargs: Any
+    ) -> tuple[DeviceAssurance | None, ApiResponse | None, OktaError]: ...
+    async def create_device_assurance_policy(
+        self, device_assurance: Any, **kwargs: Any
+    ) -> tuple[DeviceAssurance | None, ApiResponse | None, OktaError]: ...
+    async def replace_device_assurance_policy(
+        self, device_assurance_id: str, device_assurance: Any, **kwargs: Any
+    ) -> tuple[DeviceAssurance | None, ApiResponse | None, OktaError]: ...
+    async def delete_device_assurance_policy(
+        self, device_assurance_id: str, **kwargs: Any
     ) -> tuple[None, ApiResponse | None, OktaError]: ...
 
     # ── System Logs ────────────────────────────────────────────────────────

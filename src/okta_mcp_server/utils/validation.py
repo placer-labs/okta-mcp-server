@@ -16,7 +16,7 @@ URL paths when passed to the Okta SDK client.
 import functools
 import inspect
 import re
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from loguru import logger
 
@@ -186,6 +186,116 @@ def validate_ids(*id_params: str, error_return_type: str = "list"):
             return func(*args, **kwargs)
 
         # Return appropriate wrapper based on whether function is async
+        if inspect.iscoroutinefunction(func):
+            return async_wrapper
+        return sync_wrapper
+
+    return decorator
+
+
+# ---------------------------------------------------------------------------
+# OS version validation
+# ---------------------------------------------------------------------------
+
+# Exactly three or four numeric components (X.Y.Z or X.Y.Z.W). Two-component
+# versions are excluded on purpose so they get a tailored error.
+_OS_SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+(\.\d+)?$")
+
+_OS_TWO_COMPONENT_VERSION = re.compile(r"^\d+\.\d+$")
+
+# Single-component versions are only meaningful as Android major versions.
+_OS_SINGLE_COMPONENT_VERSION = re.compile(r"^\d+$")
+
+_OS_VERSION_FORMAT_ERROR = (
+    "Invalid OS version format: '{version}'. Version must be in X.Y.Z or X.Y.Z.W format. "
+    "For Android, a major version only (e.g. '12') is also accepted."
+)
+
+
+def _validate_os_version_string(version: str, platform: str = "") -> Optional[str]:
+    """Validate a raw OS version string, returning an error message or None.
+
+    Accepts X.Y.Z, X.Y.Z.W, and a bare major version for ANDROID only.
+    """
+    if not version:
+        return None
+
+    if _OS_SINGLE_COMPONENT_VERSION.match(version):
+        if (platform or "").upper() == "ANDROID":
+            return None
+        return _OS_VERSION_FORMAT_ERROR.format(version=version)
+
+    # "13.3" and "13.3.0" are different versions — never suggest a completion.
+    if _OS_TWO_COMPONENT_VERSION.match(version):
+        return (
+            f"Incomplete OS version: '{version}'. This could mean '{version}.0', '{version}.1', or another "
+            "patch release — they are NOT equivalent. You MUST ask the user which exact patch version they "
+            f"mean. Do NOT assume or guess '{version}.0'."
+        )
+
+    if not _OS_SEMVER_PATTERN.match(version):
+        return _OS_VERSION_FORMAT_ERROR.format(version=version)
+
+    return None
+
+
+def validate_os_version_params(*param_names: str, error_return_type: str = "dict"):
+    """Reject malformed OS version strings before the tool body runs.
+
+    Handles both a direct version string (``version_threshold="14.2.1"``) and a
+    policy-data dict carrying ``osVersion.minimum``. The platform is read from
+    the same call so a bare Android major version is accepted.
+    """
+
+    def decorator(func: Callable) -> Callable:
+        def _check_arguments(bound_args) -> Optional[str]:
+            for param_name in param_names:
+                if param_name not in bound_args.arguments:
+                    continue
+                value = bound_args.arguments[param_name]
+                if value is None:
+                    continue
+
+                if isinstance(value, str):
+                    error = _validate_os_version_string(value, bound_args.arguments.get("platform") or "")
+                    if error:
+                        return error
+
+                elif isinstance(value, dict):
+                    os_version = value.get("osVersion") or value.get("os_version")
+                    if isinstance(os_version, dict):
+                        minimum = os_version.get("minimum")
+                        if isinstance(minimum, str):
+                            error = _validate_os_version_string(minimum, value.get("platform") or "")
+                            if error:
+                                return error
+            return None
+
+        def _error_result(error: str) -> Any:
+            if error_return_type == "dict":
+                return {"error": error}
+            return [f"Error: {error}"]
+
+        @functools.wraps(func)
+        async def async_wrapper(*args, **kwargs) -> Any:
+            bound = inspect.signature(func).bind(*args, **kwargs)
+            bound.apply_defaults()
+            error = _check_arguments(bound)
+            if error:
+                logger.warning(f"Rejected OS version argument in {getattr(func, '__name__', 'tool')}: {error}")
+                return _error_result(error)
+            return await func(*args, **kwargs)
+
+        @functools.wraps(func)
+        def sync_wrapper(*args, **kwargs) -> Any:
+            bound = inspect.signature(func).bind(*args, **kwargs)
+            bound.apply_defaults()
+            error = _check_arguments(bound)
+            if error:
+                logger.warning(f"Rejected OS version argument in {getattr(func, '__name__', 'tool')}: {error}")
+                return _error_result(error)
+            return func(*args, **kwargs)
+
         if inspect.iscoroutinefunction(func):
             return async_wrapper
         return sync_wrapper

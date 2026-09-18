@@ -241,10 +241,14 @@ def main():
         logger.info("OpenTelemetry tool-call middleware registered")
 
     from okta_mcp_server.tools.applications import applications  # ruff: ignore[unused-import]
+    from okta_mcp_server.tools.device_assurance import device_assurance  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.group_rules import group_rules  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.groups import groups  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.policies import policies  # ruff: ignore[unused-import]
-    from okta_mcp_server.tools.system_logs import system_logs  # ruff: ignore[unused-import]
+    from okta_mcp_server.tools.system_logs import (
+        login_failures,  # ruff: ignore[unused-import]
+        system_logs,  # ruff: ignore[unused-import]
+    )
     from okta_mcp_server.tools.users import users  # ruff: ignore[unused-import]
 
     if MCP_TRANSPORT == "streamable-http":
