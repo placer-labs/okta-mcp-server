@@ -29,10 +29,12 @@ def _obj_to_dict(obj: Any) -> Dict[str, Any]:
     if isinstance(obj, dict):
         return obj
     if hasattr(obj, "model_dump"):
+        # by_alias keys the dump the way the API does (camelCase), matching the
+        # field lists below; the snake_case default made them all miss.
         # warnings=False suppresses Pydantic serializer warnings for models that
         # were reconstructed leniently (see okta_compat) and therefore hold raw
         # enum strings / nested dicts instead of typed sub-models.
-        return obj.model_dump(warnings=False)
+        return obj.model_dump(by_alias=True, warnings=False)
     if hasattr(obj, "as_dict"):
         return obj.as_dict()
     if hasattr(obj, "__dict__"):
@@ -291,3 +293,4 @@ def summarize_group_rule(rule: Any) -> Dict[str, Any]:
 def summarize_group_rules(rules: List[Any]) -> List[Dict[str, Any]]:
     """Summarize a list of GroupRule dicts."""
     return [summarize_group_rule(r) for r in rules]
+
