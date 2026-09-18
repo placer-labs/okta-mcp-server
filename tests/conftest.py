@@ -14,8 +14,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from mcp.server.elicitation import AcceptedElicitation, CancelledElicitation, DeclinedElicitation
-from mcp.shared.exceptions import McpError
-from mcp.types import METHOD_NOT_FOUND, ErrorData
+from mcp.shared.exceptions import MCPError
+from mcp.types import METHOD_NOT_FOUND
 
 # ---------------------------------------------------------------------------
 # Fake Okta auth / lifespan context
@@ -158,23 +158,19 @@ def ctx_elicit_exception():
 
 @pytest.fixture()
 def ctx_elicit_mcp_error_method_not_found():
-    """Context where ctx.elicit() raises McpError with METHOD_NOT_FOUND."""
+    """Context where ctx.elicit() raises MCPError with METHOD_NOT_FOUND."""
     return _build_ctx(
         elicitation_supported=True,
-        elicit_side_effect=McpError(
-            error=ErrorData(code=METHOD_NOT_FOUND, message="Method not found"),
-        ),
+        elicit_side_effect=MCPError(code=METHOD_NOT_FOUND, message="Method not found"),
     )
 
 
 @pytest.fixture()
 def ctx_elicit_mcp_error_other():
-    """Context where ctx.elicit() raises McpError with a non-METHOD_NOT_FOUND code."""
+    """Context where ctx.elicit() raises MCPError with a non-METHOD_NOT_FOUND code."""
     return _build_ctx(
         elicitation_supported=True,
-        elicit_side_effect=McpError(
-            error=ErrorData(code=-32600, message="Invalid request"),
-        ),
+        elicit_side_effect=MCPError(code=-32600, message="Invalid request"),
     )
 
 

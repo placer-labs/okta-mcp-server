@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "loguru>=0.7.3",
-    "fastmcp>=3.4.7,<4",
+    "fastmcp>=4.0.5",
     "okta>=3.4.5",
     "requests>=2.34.2",
     "keyring>=25.7.0",
