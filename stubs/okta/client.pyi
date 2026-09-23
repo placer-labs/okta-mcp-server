@@ -12,6 +12,7 @@ from okta.api_response import ApiResponse
 from okta.models.application import Application
 from okta.models.device_assurance import DeviceAssurance
 from okta.models.group import Group
+from okta.models.group_push_mapping import GroupPushMapping
 from okta.models.group_rule import GroupRule
 from okta.models.log_event import LogEvent
 from okta.models.policy import Policy
@@ -76,6 +77,14 @@ class Client:
     async def unassign_user_from_group(
         self, group_id: str, user_id: str, **kwargs: Any
     ) -> tuple[None, ApiResponse | None, OktaError]: ...
+
+    # ── Group Push Mappings ────────────────────────────────────────────────
+    async def list_group_push_mappings(
+        self, app_id: str, **kwargs: Any
+    ) -> tuple[list[GroupPushMapping] | None, ApiResponse | None, OktaError]: ...
+    async def get_group_push_mapping(
+        self, app_id: str, mapping_id: str, **kwargs: Any
+    ) -> tuple[GroupPushMapping | None, ApiResponse | None, OktaError]: ...
 
     # ── Group Rules ────────────────────────────────────────────────────────
     async def list_group_rules(

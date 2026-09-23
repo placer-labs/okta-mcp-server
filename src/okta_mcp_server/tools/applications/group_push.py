@@ -92,17 +92,11 @@ async def list_group_push_mappings(
         if limit:
             kwargs["limit"] = limit
 
-        result = await client.list_group_push_mappings(app_id, **kwargs)
+        mappings, _, err = await client.list_group_push_mappings(app_id, **kwargs)
 
-        # The SDK is inconsistent across generations: the older surface returns
-        # (value, response, error) while the generated one returns the list directly.
-        if isinstance(result, tuple):
-            mappings, _, err = result
-            if err:
-                logger.error(f"Okta API error listing group push mappings for {app_id}: {err}")
-                raise ToolError(f"Okta API error: {err}")
-        else:
-            mappings = result
+        if err:
+            logger.error(f"Okta API error listing group push mappings for {app_id}: {err}")
+            raise ToolError(f"Okta API error: {err}")
 
         items: List[Dict[str, Any]] = [_summarize_mapping(m) for m in (mappings or [])]
         logger.info(f"Retrieved {len(items)} group push mappings for app {app_id}")
