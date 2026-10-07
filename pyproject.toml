@@ -16,6 +16,7 @@ dependencies = [
     "opentelemetry-instrumentation-aiohttp-client>=0.65b0",
     "opentelemetry-instrumentation-starlette>=0.65b0",
     "opentelemetry-instrumentation-httpx>=0.65b0",
+    "py-key-value-aio[valkey]>=0.4.6",
 ]
 
 
