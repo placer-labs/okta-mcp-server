@@ -8,7 +8,7 @@ LABEL Title="Okta MCP Server" \
       Maintainer="Okta"
 
 # Install uv (0.11.31+ carries the quick-xml 0.41.0 fix for RUSTSEC-2026-0194/0195)
-COPY --from=ghcr.io/astral-sh/uv:0.11.31@sha256:ecd4de2f060c64bea0ff8ecb182ddf46ba3fcccdc8a60cfdbaf20d1a047d7437 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff /uv /usr/local/bin/uv
 
 WORKDIR /app
 

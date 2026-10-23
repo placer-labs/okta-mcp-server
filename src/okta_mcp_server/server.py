@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging as _stdlib_logging
 import os
 import sys
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Literal, Optional, cast
@@ -63,7 +63,7 @@ class OktaAppContext:
 
 
 @asynccontextmanager
-async def okta_authorisation_flow(server: FastMCP) -> AsyncIterator[OktaAppContext]:
+async def okta_authorisation_flow(server: FastMCP) -> AsyncGenerator[OktaAppContext]:
     """
     Manages the application lifecycle. In stdio mode, initializes OktaAuthManager
     for device/JWT flow. In HTTP mode with OAuthProxy, authentication is handled

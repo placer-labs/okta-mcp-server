@@ -39,3 +39,8 @@ okta-mcp-server = "okta_mcp_server.server:main"
 
 [tool.ty.environment]
 extra-paths = ["stubs"]
+
+[tool.uv]
+# multidict 7.1 dedupes keys() for case-insensitive dicts, which changes how
+# aiohttp header iteration behaves; hold at 6.x until that's been verified.
+constraint-dependencies = ["multidict<7"]
