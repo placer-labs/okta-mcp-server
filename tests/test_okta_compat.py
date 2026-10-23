@@ -74,13 +74,17 @@ def _deserialize_app_list(client, apps):
     return client.deserialize(json.dumps(apps), "List[Application]")
 
 
-def test_strict_saml_app_aborts_without_patch():
-    """Sanity check: without the shim the SAML app raises ValidationError."""
+def test_strict_browser_plugin_app_aborts_without_patch():
+    """Sanity check: without the shim the browser-plugin app raises ValidationError.
+
+    okta 3.4.6 relaxed the SAML ``settings.signOn`` fields, but the browser-plugin
+    ``name`` enum is still strict, so the shim is still needed.
+    """
     from okta.models.application import Application
 
     with pytest.raises(Exception) as exc_info:
-        Application.from_dict(_BAD_SAML_APP)
-    assert "SamlApplication" in str(exc_info.value)
+        Application.from_dict(_BAD_BROWSER_PLUGIN_APP)
+    assert "BrowserPluginApplication" in str(exc_info.value)
 
 
 def test_bad_saml_app_survives_deserialization(deserializer):
