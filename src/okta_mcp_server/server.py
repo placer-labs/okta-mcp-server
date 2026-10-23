@@ -136,6 +136,36 @@ if MCP_TRANSPORT == "streamable-http":
     _require_consent_raw = os.environ.get("REQUIRE_AUTHORIZATION_CONSENT", "true").lower()
     _require_consent: bool | str = "external" if _require_consent_raw == "external" else _require_consent_raw == "true"
 
+    # OAuth proxy state goes to Valkey when OKTA_OAUTH_PROXY_VALKEY_HOST is set, so
+    # replicas share it; otherwise FastMCP's default encrypted disk store is used.
+    # Encrypted with the same key derivation FastMCP applies to its disk store.
+    _client_storage = None
+    _valkey_host = os.environ.get("OKTA_OAUTH_PROXY_VALKEY_HOST", "").strip()
+    if _valkey_host:
+        from cryptography.fernet import Fernet
+        from key_value.aio.stores.valkey import ValkeyStore
+        from key_value.aio.wrappers.encryption import FernetEncryptionWrapper
+
+        if _jwt_signing_key is None:
+            raise RuntimeError("OKTA_OAUTH_PROXY_VALKEY_HOST requires OKTA_CLIENT_SECRET or OKTA_JWT_SIGNING_KEY")
+        _valkey_db = int(os.environ.get("OKTA_OAUTH_PROXY_VALKEY_DB", "0"))
+        _client_storage = FernetEncryptionWrapper(
+            key_value=ValkeyStore(
+                host=_valkey_host,
+                port=int(os.environ.get("OKTA_OAUTH_PROXY_VALKEY_PORT", "6379")),
+                db=_valkey_db,
+                password=os.environ.get("OKTA_OAUTH_PROXY_VALKEY_PASSWORD") or None,
+            ),
+            fernet=Fernet(
+                key=_derive_jwt_key(
+                    high_entropy_material=_jwt_signing_key.decode(),
+                    salt="fastmcp-storage-encryption-key",
+                )
+            ),
+            raise_on_decryption_error=False,
+        )
+        logger.info(f"OAuth proxy storage: Valkey at {_valkey_host} db={_valkey_db}")
+
     _auth = OAuthProxy(
         upstream_authorization_endpoint=f"{_okta_org_url}/oauth2/v1/authorize",
         upstream_token_endpoint=f"{_okta_org_url}/oauth2/v1/token",
@@ -151,6 +181,7 @@ if MCP_TRANSPORT == "streamable-http":
         require_authorization_consent=_require_consent,
         extra_authorize_params={"scope": _okta_scopes},
         jwt_signing_key=_jwt_signing_key,
+        client_storage=_client_storage,
         # Without this, OAuthProxy derives its default scope from
         # token_verifier.required_scopes — None for introspection — so CIMD and DCR
         # clients (e.g. Claude Code) register with no scopes and hit invalid_scope on
