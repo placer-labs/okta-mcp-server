@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging as _stdlib_logging
 import os
 import sys
@@ -75,11 +76,8 @@ async def okta_authorisation_flow(server: FastMCP) -> AsyncIterator[OktaAppConte
     else:
         logger.info("Initializing OktaAuthManager (authentication deferred to first tool call)")
         manager = OktaAuthManager()
-        try:
-            yield OktaAppContext(okta_auth_manager=manager)
-        finally:
-            logger.debug("Clearing Okta tokens")
-            manager.clear_tokens()
+        # Tokens stay in the keyring on shutdown so the next session can re-use them.
+        yield OktaAppContext(okta_auth_manager=manager)
 
 
 # --- Build the FastMCP instance based on transport mode ---
@@ -196,6 +194,31 @@ if MCP_TRANSPORT == "streamable-http":
         )
 
 
+@mcp.tool()
+def get_scope_status() -> dict:
+    """Report which Okta MCP tools are disabled because their OAuth scope is not configured.
+
+    Call this tool whenever a user asks for an Okta operation but no matching tool is
+    available, or to explain why an action cannot be performed. If the required tool is
+    listed in ``disabled_tools``, do NOT attempt the operation; tell the user which scope
+    is missing and that it must be added to OKTA_SCOPES (and granted to the Okta app)
+    before restarting the server.
+    """
+    from okta_mcp_server.utils.scope_guard import get_disabled_tools, get_startup_scopes
+
+    disabled = get_disabled_tools()
+    by_scope: dict[str, list[str]] = {}
+    for tool_name, required_scope in sorted(disabled.items()):
+        by_scope.setdefault(required_scope, []).append(tool_name)
+
+    return {
+        "configured_scopes": sorted(get_startup_scopes()),
+        "disabled_tools": disabled,
+        "missing_scopes": sorted(by_scope),
+        "by_scope": [{"missing_scope": scope, "disabled_tools": tools} for scope, tools in sorted(by_scope.items())],
+    }
+
+
 def main():
     """Run the Okta MCP server."""
     logger.remove()
@@ -253,6 +276,9 @@ def main():
         system_logs,  # ruff: ignore[unused-import]
     )
     from okta_mcp_server.tools.users import users  # ruff: ignore[unused-import]
+    from okta_mcp_server.utils.scope_guard import prune_tools_by_scope
+
+    asyncio.run(prune_tools_by_scope(mcp))
 
     if MCP_TRANSPORT == "streamable-http":
         mcp.run(transport=MCP_TRANSPORT, host="0.0.0.0", port=8000)

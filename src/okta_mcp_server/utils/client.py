@@ -37,11 +37,11 @@ async def get_okta_client(manager: OktaAuthManager | None) -> OktaClient:
 
     if manager is not None:
         # stdio mode — existing behavior
-        api_token = keyring.get_password(SERVICE_NAME, "api_token")
         if not await manager.is_valid_token():
             logger.warning("Token is invalid or expired, re-authenticating")
             await manager.authenticate()
-            api_token = keyring.get_password(SERVICE_NAME, "api_token")
+        # Read after the validity check so a token refreshed inside is_valid_token() is used.
+        api_token = keyring.get_password(SERVICE_NAME, "api_token")
         org_url = manager.org_url
     else:
         # HTTP mode — OAuthProxy passes through the upstream Okta access token.

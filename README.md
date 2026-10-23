@@ -479,6 +479,9 @@ The Okta MCP Server provides the following tools for LLMs to interact with your 
 | `delete_application`          | Delete an application (requires confirmation)     | - `Delete the old legacy application` <br> - `Remove the unused test application` <br> - `Clean up deprecated integrations`                                   |
 | `activate_application`        | Activate an application                           | - `Activate the new HR application` <br> - `Enable the Salesforce integration` <br> - `Turn on the mobile app for users`                                      |
 | `deactivate_application`      | Deactivate an application                         | - `Deactivate the legacy CRM application` <br> - `Temporarily disable the mobile app` <br> - `Turn off access to the test environment`                        |
+| `list_catalog_apps`           | Browse the OIN app catalog (find an app's `name` + features) | - `Find a SCIM 2.0 test app in the catalog` <br> - `Search the OIN catalog for Slack`                                                                        |
+| `get_catalog_app`             | Get a single OIN catalog app definition (incl. schema) | - `Show the catalog definition for the SCIM 2.0 test app`                                                                                                    |
+| `install_oin_app`             | Install an instance of an OIN catalog app (e.g. a provisioning-capable SCIM app) | - `Install the SCIM 2.0 test app as "HR Directory Sync"` <br> - `Add the Slack OIN app to my org`                                                            |
 
 ### Policies
 
