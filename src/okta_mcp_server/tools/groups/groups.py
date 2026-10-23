@@ -395,18 +395,36 @@ async def list_group_users(
 
 @mcp.tool()
 @validate_ids("group_id", error_return_type="dict")
-async def list_group_apps(group_id: str, ctx: Context | None = None):
-    """List all applications in a group by ID from the Okta organization.
-
-    This tool retrieves all applications in a group by its ID from the Okta organization.
+async def list_group_apps(
+    group_id: str,
+    ctx: Context | None = None,
+    fetch_all: bool = False,
+    after: Optional[str] = None,
+    limit: Optional[int] = None,
+):
+    """List all applications assigned to a group by ID from the Okta organization with pagination support.
 
     Parameters:
         group_id (str, required): The ID of the group to retrieve applications from.
+        fetch_all (bool, optional): If True, automatically fetch all pages of results. Default: False.
+        after (str, optional): Pagination cursor for fetching results after this point.
+        limit (int, optional): Maximum number of applications to return per page (max 200). Default: 20.
 
     Returns:
-        List containing the applications in the group.
+        Dict containing:
+        - items: List of application objects assigned to the group
+        - total_fetched: Number of applications returned
+        - has_more: Boolean indicating if more results are available
+        - next_cursor: Cursor for the next page (if has_more is True)
+        - fetch_all_used: Boolean indicating if fetch_all was used
+        - pagination_info: Additional pagination metadata (when fetch_all=True)
     """
     logger.info(f"Listing applications assigned to group: {group_id}")
+    logger.debug(f"fetch_all: {fetch_all}, after: '{after}', limit: {limit}")
+
+    if limit is not None and limit > 200:
+        logger.warning(f"Limit {limit} exceeds maximum (200), setting to 200")
+        limit = 200
 
     manager = _resolve_manager(ctx)
 
@@ -414,16 +432,33 @@ async def list_group_apps(group_id: str, ctx: Context | None = None):
         client = await get_okta_client(manager)
         logger.debug(f"Calling Okta API to list applications for group {group_id}")
 
-        apps, _, err = await client.list_assigned_applications_for_group(group_id)
+        query_params = build_query_params(after=after, limit=200 if fetch_all else limit)
+        apps, response, err = await client.list_assigned_applications_for_group(group_id, **query_params)
 
         if err:
             logger.error(f"Okta API error while listing applications for group {group_id}: {err}")
             raise ToolError(f"Okta API error: {err}")
 
-        app_count = len(apps) if apps else 0
-        logger.info(f"Successfully retrieved {app_count} applications for group {group_id}")
+        if not apps:
+            logger.info(f"No applications found for group {group_id}")
+            return create_paginated_response([], response, fetch_all)
 
-        return summarize_applications(apps or [])
+        if fetch_all and has_next_page(response):
+            logger.info(f"fetch_all=True, auto-paginating from initial {len(apps)} apps for group {group_id}")
+            all_apps, pagination_info = await paginate_all_results(
+                client.list_assigned_applications_for_group, {**query_params, "group_id": group_id}, apps, response
+            )
+
+            pages_fetched = pagination_info["pages_fetched"]
+            logger.info(
+                f"Successfully retrieved {len(all_apps)} applications for group {group_id} across {pages_fetched} pages"
+            )
+            return create_paginated_response(
+                summarize_applications(all_apps), response, fetch_all_used=True, pagination_info=pagination_info
+            )
+
+        logger.info(f"Successfully retrieved {len(apps)} applications for group {group_id}")
+        return create_paginated_response(summarize_applications(apps), response, fetch_all_used=fetch_all)
     except ToolError:
         raise
     except Exception as e:

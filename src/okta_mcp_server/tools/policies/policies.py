@@ -13,7 +13,13 @@ from loguru import logger
 
 from okta_mcp_server.server import mcp
 from okta_mcp_server.utils.client import _resolve_manager, get_okta_client
-from okta_mcp_server.utils.pagination import extract_after_cursor
+from okta_mcp_server.utils.pagination import (
+    build_query_params,
+    create_paginated_response,
+    extract_after_cursor,
+    has_next_page,
+    paginate_all_results,
+)
 from okta_mcp_server.utils.summarize import (
     _obj_to_dict,
     summarize_policies,
@@ -30,10 +36,11 @@ async def list_policies(
     type: str,
     status: Optional[str] = None,
     q: Optional[str] = None,
-    limit: Optional[int] = 20,
+    limit: Optional[int] = None,
     after: Optional[str] = None,
+    fetch_all: bool = False,
 ):
-    """List all the policies from the Okta organization.
+    """List all the policies from the Okta organization with pagination support.
 
     Parameters:
         type (str, required): Specifies the type of policy to return. Available policy types are:
@@ -41,16 +48,23 @@ async def list_policies(
             PROFILE_ENROLLMENT, POST_AUTH_SESSION, ENTITY_RISK
         status (str, optional): Refines the query by the status of the policy - ACTIVE or INACTIVE.
         q (str, optional): A query string to search policies by name.
-        limit (int, optional): Number of results to return (min 20, max 100).
-        after (str, optional): Specifies the pagination cursor for the next page of policies.
+        limit (int, optional): Number of results to return per page (min 20, max 100). Default: 20.
+        after (str, optional): Pagination cursor for the next page of policies.
+        fetch_all (bool, optional): If True, automatically fetch all pages. Default: False.
 
     Returns:
         Dict containing:
-            - policies (List[Dict]): List of policy dictionaries, each containing policy details
-            - error (str): Error message if the operation fails
+        - items: List of policy dictionaries
+        - total_fetched: Number of policies returned
+        - has_more: Boolean indicating if more results are available
+        - next_cursor: Cursor for the next page (if has_more is True)
+        - fetch_all_used: Boolean indicating if fetch_all was used
+        - pagination_info: Additional pagination metadata (when fetch_all=True)
     """
     logger.info("Listing policies from Okta organization")
-    logger.debug(f"Type: '{type}', Status: '{status}', Q: '{q}', limit: {limit}")
+    logger.debug(
+        f"Type: '{type}', Status: '{status}', Q: '{q}', fetch_all: {fetch_all}, after: '{after}', limit: {limit}"
+    )
 
     # Validate limit parameter range
     if limit is not None:
@@ -65,14 +79,10 @@ async def list_policies(
 
     try:
         okta_client = await get_okta_client(manager)
-        params = {"type": type}
-        if status:
-            params["status"] = status
-        if after:
-            params["after"] = after
+        params = build_query_params(type=type, status=status, q=q, after=after, limit=100 if fetch_all else limit)
 
         logger.debug("Calling Okta API to list policies")
-        policies, _, err = await okta_client.list_policies(**params)
+        policies, response, err = await okta_client.list_policies(**params)
 
         if err:
             logger.error(f"Error listing policies: {err}")
@@ -80,12 +90,27 @@ async def list_policies(
 
         if not policies:
             logger.info("No policies found")
-            return {"policies": []}
+            return create_paginated_response([], response, fetch_all)
+
+        if fetch_all and has_next_page(response):
+            logger.info(f"fetch_all=True, auto-paginating from initial {len(policies)} policies")
+            policies, pagination_info = await paginate_all_results(
+                okta_client.list_policies, params, policies, response
+            )
+            logger.info(
+                f"Successfully retrieved {len(policies)} policies across {pagination_info['pages_fetched']} pages"
+            )
+            return create_paginated_response(
+                summarize_policies([_obj_to_dict(policy) for policy in policies]),
+                response,
+                fetch_all_used=True,
+                pagination_info=pagination_info,
+            )
 
         logger.info(f"Successfully retrieved {len(policies)} policies")
-        return {
-            "policies": summarize_policies([_obj_to_dict(policy) for policy in policies]),
-        }
+        return create_paginated_response(
+            summarize_policies([_obj_to_dict(policy) for policy in policies]), response, fetch_all_used=fetch_all
+        )
 
     except ToolError:
         raise
