@@ -7,6 +7,7 @@
 
 from typing import Any, Dict, Optional
 
+import okta.models as okta_models
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
 from loguru import logger
@@ -29,6 +30,23 @@ from okta_mcp_server.utils.summarize import (
     summarize_policy_rules,
 )
 from okta_mcp_server.utils.validation import validate_ids
+
+_POLICY_RULE_MODEL_MAP: Dict[str, Any] = {
+    "SIGN_ON": okta_models.OktaSignOnPolicyRule,
+    "PASSWORD": okta_models.PasswordPolicyRule,
+    "ACCESS_POLICY": okta_models.AccessPolicyRule,
+    "PROFILE_ENROLLMENT": okta_models.ProfileEnrollmentPolicyRule,
+    "MFA_ENROLL": okta_models.AuthenticatorEnrollmentPolicyRule,
+    "IDP_DISCOVERY": okta_models.IdpDiscoveryPolicyRule,
+    "DEVICE_SIGNAL_COLLECTION": okta_models.DeviceSignalCollectionPolicyRule,
+    "ENTITY_RISK": okta_models.EntityRiskPolicyRule,
+    "POST_AUTH_SESSION": okta_models.PostAuthSessionPolicyRule,
+}
+
+
+def _build_policy_rule_model(rule_data: Dict[str, Any]) -> Any:
+    model_cls = _POLICY_RULE_MODEL_MAP.get(str(rule_data.get("type", "")).upper(), okta_models.PolicyRule)
+    return model_cls.from_dict(rule_data)
 
 
 @mcp.tool()
@@ -436,7 +454,7 @@ async def create_policy_rule(ctx: Context, policy_id: str, rule_data: Dict[str, 
     okta_client = await get_okta_client(manager)
 
     try:
-        rule, _, err = await okta_client.create_policy_rule(policy_id, rule_data)
+        rule, _, err = await okta_client.create_policy_rule(policy_id, _build_policy_rule_model(rule_data))
 
         if err:
             logger.error(f"Error creating policy rule: {err}")
@@ -477,7 +495,7 @@ async def update_policy_rule(ctx: Context, policy_id: str, rule_id: str, rule_da
     okta_client = await get_okta_client(manager)
 
     try:
-        rule, _, err = await okta_client.replace_policy_rule(policy_id, rule_id, rule_data)
+        rule, _, err = await okta_client.replace_policy_rule(policy_id, rule_id, _build_policy_rule_model(rule_data))
 
         if err:
             logger.error(f"Error updating policy rule: {err}")

@@ -10,6 +10,7 @@ import json
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
+import okta.models as okta_models
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
 from loguru import logger
@@ -25,6 +26,24 @@ from okta_mcp_server.utils.pagination import (
 from okta_mcp_server.utils.serialization import none_body_error
 from okta_mcp_server.utils.summarize import summarize_application, summarize_applications
 from okta_mcp_server.utils.validation import validate_ids
+
+_SIGN_ON_MODE_MODEL_MAP: Dict[str, Any] = {
+    "BOOKMARK": okta_models.BookmarkApplication,
+    "AUTO_LOGIN": okta_models.AutoLoginApplication,
+    "BASIC_AUTH": okta_models.BasicAuthApplication,
+    "BROWSER_PLUGIN": okta_models.BrowserPluginApplication,
+    "OPENID_CONNECT": okta_models.OpenIdConnectApplication,
+    "SAML_1_1": okta_models.Saml11Application,
+    "SAML_2_0": okta_models.SamlApplication,
+    "SECURE_PASSWORD_STORE": okta_models.SecurePasswordStoreApplication,
+    "WS_FEDERATION": okta_models.WsFederationApplication,
+}
+
+
+def _build_application_model(app_config: Dict[str, Any]) -> Any:
+    sign_on_mode = app_config.get("signOnMode") or app_config.get("sign_on_mode", "")
+    model_cls = _SIGN_ON_MODE_MODEL_MAP.get(str(sign_on_mode).upper(), okta_models.Application)
+    return model_cls.from_dict(app_config)
 
 
 @mcp.tool()
@@ -190,7 +209,7 @@ async def create_application(ctx: Context, app_config: Dict[str, Any], activate:
         query_params = {"activate": activate}
 
         logger.debug("Calling Okta API to create application")
-        app, _, err = await client.create_application(app_config, **query_params)
+        app, _, err = await client.create_application(_build_application_model(app_config), **query_params)
 
         if err:
             logger.error(f"Okta API error while creating application: {err}")
@@ -234,7 +253,7 @@ async def update_application(ctx: Context, app_id: str, app_config: Dict[str, An
         client = await get_okta_client(manager)
 
         logger.debug(f"Calling Okta API to update application {app_id}")
-        app, _, err = await client.replace_application(app_id, app_config)
+        app, _, err = await client.replace_application(app_id, _build_application_model(app_config))
 
         if err:
             logger.error(f"Okta API error while updating application {app_id}: {err}")
