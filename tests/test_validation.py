@@ -12,11 +12,16 @@ These tests verify that the validate_okta_id function properly blocks
 path traversal and injection attacks while allowing valid Okta IDs.
 """
 
+import os
+
 import pytest
 
 from okta_mcp_server.utils.validation import (
+    ALLOWED_KEY_DIRS_ENV,
+    InvalidFilePathError,
     InvalidOktaIdError,
     _validate_os_version_string,
+    validate_file_path,
     validate_okta_id,
     validate_os_version_params,
 )
@@ -206,3 +211,33 @@ class TestValidateOsVersion:
             return ["ok"]
 
         assert (await tool("14.2"))[0].startswith("Error: Incomplete")
+
+
+class TestValidateFilePath:
+    @pytest.fixture(autouse=True)
+    def _allowed(self, tmp_path, monkeypatch):
+        self.allowed = tmp_path / "allowed"
+        self.allowed.mkdir()
+        monkeypatch.setenv(ALLOWED_KEY_DIRS_ENV, str(self.allowed))
+
+    def test_file_inside_allowed_dir_returns_real_path(self):
+        f = self.allowed / "logo.png"
+        f.write_bytes(b"x")
+        assert validate_file_path(str(f)) == os.path.realpath(f)
+
+    @pytest.mark.parametrize("path", ["", "../etc/passwd", "/tmp/%2e%2e/etc/passwd"])
+    def test_rejects_empty_and_traversal(self, path):
+        with pytest.raises(InvalidFilePathError):
+            validate_file_path(path)
+
+    def test_rejects_path_outside_allowed_dirs(self):
+        with pytest.raises(InvalidFilePathError, match="outside the permitted directories"):
+            validate_file_path("/etc/passwd")
+
+    def test_rejects_symlink_escaping_allowed_dir(self, tmp_path):
+        target = tmp_path / "secret"
+        target.write_text("s")
+        link = self.allowed / "link"
+        link.symlink_to(target)
+        with pytest.raises(InvalidFilePathError, match="Symlink escapes"):
+            validate_file_path(str(link))

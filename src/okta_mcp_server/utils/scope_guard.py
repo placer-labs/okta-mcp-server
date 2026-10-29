@@ -17,9 +17,11 @@ requests the configured scopes.
 
 from __future__ import annotations
 
+import functools
 import os
-from typing import Any
+from typing import Any, Callable
 
+from fastmcp.exceptions import ToolError
 from loguru import logger
 
 from okta_mcp_server.utils.scope_registry import TOOL_SCOPE_REGISTRY
@@ -55,6 +57,32 @@ def scope_satisfied(required: str, configured: set[str]) -> bool:
     if required.endswith(".read"):
         return required.removesuffix(".read") + ".manage" in configured
     return False
+
+
+def require_scopes(*required_scopes: str, error_return_type: str = "dict") -> Callable:
+    """Call-time counterpart of ``prune_tools_by_scope`` for upstream-ported tools.
+
+    Pruning already hides these tools, so this only fires on a direct call. It
+    follows the same rules: nothing is enforced when no ``okta.*`` scope is
+    configured, and ``.manage`` covers ``.read``. ``error_return_type`` is accepted
+    for upstream signature compatibility; failures raise ``ToolError``.
+    """
+
+    def decorator(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            configured = configured_okta_scopes()
+            missing = [s for s in required_scopes if configured and not scope_satisfied(s, configured)]
+            if missing:
+                raise ToolError(
+                    f"Missing OAuth scope(s) {', '.join(missing)}: add them to OKTA_SCOPES, grant them to "
+                    "the Okta app, and restart the server."
+                )
+            return await fn(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 async def prune_tools_by_scope(server: Any, raw_scopes: str | None = None) -> None:

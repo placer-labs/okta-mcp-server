@@ -49,3 +49,7 @@ skip-magic-trailing-comma = false # Respect magic trailing commas.
 # reStructuredText code/literal blocks and doctests are all supported.
 docstring-code-format = true
 
+
+[lint.per-file-ignores]
+# Ported verbatim from upstream; keep its naming and docstrings so syncs merge cleanly.
+"src/okta_mcp_server/tools/customization/**" = ["ambiguous-unicode-character-string", "ambiguous-unicode-character-docstring", "ambiguous-unicode-character-comment", "used-dummy-variable"]

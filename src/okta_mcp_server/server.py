@@ -267,6 +267,12 @@ def main():
         applications,  # ruff: ignore[unused-import]
         group_push,  # ruff: ignore[unused-import]
     )
+    from okta_mcp_server.tools.customization.brands import brands  # ruff: ignore[unused-import]
+    from okta_mcp_server.tools.customization.custom_domains import custom_domains  # ruff: ignore[unused-import]
+    from okta_mcp_server.tools.customization.custom_pages import custom_pages  # ruff: ignore[unused-import]
+    from okta_mcp_server.tools.customization.custom_templates import custom_templates  # ruff: ignore[unused-import]
+    from okta_mcp_server.tools.customization.email_domains import email_domains  # ruff: ignore[unused-import]
+    from okta_mcp_server.tools.customization.themes import themes  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.device_assurance import device_assurance  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.group_rules import group_rules  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.groups import groups  # ruff: ignore[unused-import]
