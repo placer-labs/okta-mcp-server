@@ -19,6 +19,7 @@ from okta_mcp_server.utils.pagination import (
     has_next_page,
     paginate_all_results,
 )
+from okta_mcp_server.utils.serialization import none_body_error
 from okta_mcp_server.utils.summarize import summarize_groups, summarize_user, summarize_users
 from okta_mcp_server.utils.validation import validate_ids
 
@@ -291,6 +292,15 @@ async def create_user(profile: dict, activate: bool = True, ctx: Context | None 
             logger.error(f"Okta API error while creating user: {err}")
             raise ToolError(f"Okta API error: {err}")
 
+        if user is None:
+            raise ToolError(
+                none_body_error(
+                    "create_user",
+                    f"creating user {profile.get('login', profile.get('email', 'N/A'))!r}",
+                    "Use list_users() to confirm and retrieve the new user.",
+                )["error"]
+            )
+
         logger.info(f"Successfully created user: {user.id if user else 'unknown'}")
         return [summarize_user(user)]
     except ToolError:
@@ -328,6 +338,15 @@ async def update_user(user_id: str, profile: dict, ctx: Context | None = None):
         if err:
             logger.error(f"Okta API error while updating user {user_id}: {err}")
             raise ToolError(f"Okta API error: {err}")
+
+        if user is None:
+            raise ToolError(
+                none_body_error(
+                    "update_user",
+                    f"updating user {user_id!r}",
+                    "Re-fetch with get_user() to confirm the current state.",
+                )["error"]
+            )
 
         logger.info(f"Successfully updated user: {user_id}")
         return [summarize_user(user)]

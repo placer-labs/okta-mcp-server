@@ -12,8 +12,8 @@ the rest of the tool surface.
 Every tool that unpacks an Okta SDK ``(result, response, err)`` 3-tuple can
 hit ``(None, response, None)`` -- a nominally successful call whose result
 payload is ``None``.  Tools that used to hide this behind a per-module
-``_serialize_x`` helper, or simply never checked for it, now return an
-actionable error dict via ``utils.serialization.none_body_error``. These
+``_serialize_x`` helper, or simply never checked for it, now raise
+``ToolError`` with the message from ``utils.serialization.none_body_error``. These
 tests lock the contract in place so a future refactor cannot silently
 regress the caller-visible response to ``null``/``{}``/a crash.
 
@@ -37,7 +37,6 @@ Covered branches:
     groups.get_group
     groups.create_group           (previously crashed with AttributeError on group.id)
     groups.update_group
-    users.get_user
     users.create_user             (previously crashed with AttributeError on user.id)
     users.update_user
     policies.get_policy
@@ -55,6 +54,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastmcp.exceptions import ToolError
 
+from okta_mcp_server.tools.applications.applications import (
+    create_application,
+    get_application,
+    update_application,
+)
 from okta_mcp_server.tools.customization.brands.brands import (
     create_brand,
     get_brand,
@@ -75,6 +79,16 @@ from okta_mcp_server.tools.customization.themes.themes import (
     get_brand_theme,
     replace_brand_theme,
 )
+from okta_mcp_server.tools.groups.groups import create_group, get_group, update_group
+from okta_mcp_server.tools.policies.policies import (
+    create_policy,
+    create_policy_rule,
+    get_policy,
+    get_policy_rule,
+    update_policy,
+    update_policy_rule,
+)
+from okta_mcp_server.tools.users.users import create_user, update_user
 
 BRAND_ID = "bnd114iNkrcN6aR680g4"
 DOMAIN_ID = "OcDz6iRyjkaCTXkdo0g3"
@@ -381,3 +395,264 @@ class TestVerifyCustomDomainNoneBodyGuard:
 
         _assert_error_dict(result, must_contain="get_custom_domain()")
         assert DOMAIN_ID in result["error"]
+
+
+class TestApplicationsNoneBodyGuards:
+    """Fresh-review finding: applications.py's get/create/update never
+    checked for the Okta SDK's (None, response, None) quirk at all."""
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.applications.applications.get_okta_client")
+    async def test_get_application_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.get_application.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await get_application(ctx=ctx_no_elicitation, app_id=APP_ID)
+        result = {"error": str(exc_info.value)}
+
+        _assert_error_dict(result, must_contain="list_applications()")
+        assert APP_ID in result["error"]
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.applications.applications.get_okta_client")
+    async def test_create_application_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.create_application.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await create_application(
+                ctx=ctx_no_elicitation,
+                app_config={
+                    "name": "bookmark",
+                    "label": "Test App",
+                    "signOnMode": "BOOKMARK",
+                    "settings": {"app": {"url": "https://example.com"}},
+                },
+            )
+        result = {"error": str(exc_info.value)}
+
+        _assert_error_dict(result, must_contain="list_applications()")
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.applications.applications.get_okta_client")
+    async def test_update_application_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.replace_application.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await update_application(
+                ctx=ctx_no_elicitation,
+                app_id=APP_ID,
+                app_config={
+                    "name": "bookmark",
+                    "label": "Test App",
+                    "signOnMode": "BOOKMARK",
+                    "settings": {"app": {"url": "https://example.com"}},
+                },
+            )
+        result = {"error": str(exc_info.value)}
+
+        _assert_error_dict(result, must_contain="get_application()")
+        assert APP_ID in result["error"]
+
+
+class TestGroupsNoneBodyGuards:
+    """Fresh-review finding: groups.py's get/create/update never checked for
+    the SDK quirk. create_group additionally crashed with AttributeError on
+    `group.id` when the quirk fired, masked into a confusing
+    {"exception": "'NoneType' object has no attribute 'id'"}."""
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.groups.groups.get_okta_client")
+    async def test_get_group_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.get_group.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await get_group(ctx=ctx_no_elicitation, group_id=GROUP_ID)
+        result = [{"error": str(exc_info.value)}]
+
+        assert isinstance(result, list) and len(result) == 1
+        _assert_error_dict(result[0], must_contain="list_groups()")
+        assert GROUP_ID in result[0]["error"]
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.groups.groups.get_okta_client")
+    async def test_create_group_none_body_returns_error_dict_not_crash(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.add_group.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await create_group(ctx=ctx_no_elicitation, profile={"name": "Engineering"})
+        result = [{"error": str(exc_info.value)}]
+
+        assert isinstance(result, list) and len(result) == 1
+        _assert_error_dict(result[0], must_contain="list_groups()")
+        assert "exception" not in result[0], (
+            "create_group must not crash with AttributeError on group.id when the SDK returns (None, response, None)."
+        )
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.groups.groups.get_okta_client")
+    async def test_update_group_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.replace_group.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await update_group(ctx=ctx_no_elicitation, group_id=GROUP_ID, profile={"name": "Engineering"})
+        result = [{"error": str(exc_info.value)}]
+
+        assert isinstance(result, list) and len(result) == 1
+        _assert_error_dict(result[0], must_contain="get_group()")
+        assert GROUP_ID in result[0]["error"]
+
+
+class TestUsersNoneBodyGuards:
+    """create_user and update_user must not report success on an empty body.
+    get_user keeps returning [] for a missing user (see test_get_user)."""
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.users.users.get_okta_client")
+    async def test_create_user_none_body_returns_error_dict_not_crash(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.create_user.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await create_user(
+                ctx=ctx_no_elicitation,
+                profile={"login": "jdoe@example.com", "email": "jdoe@example.com"},
+            )
+        result = [{"error": str(exc_info.value)}]
+
+        assert isinstance(result, list) and len(result) == 1
+        _assert_error_dict(result[0], must_contain="list_users()")
+        assert "exception" not in result[0], (
+            "create_user must not crash with AttributeError on user.id when the SDK returns (None, response, None)."
+        )
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.users.users.get_okta_client")
+    async def test_update_user_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.update_user.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await update_user(ctx=ctx_no_elicitation, user_id=USER_ID, profile={"firstName": "Jane"})
+        result = [{"error": str(exc_info.value)}]
+
+        assert isinstance(result, list) and len(result) == 1
+        _assert_error_dict(result[0], must_contain="get_user()")
+        assert USER_ID in result[0]["error"]
+
+
+class TestPoliciesNoneBodyGuards:
+    """Fresh-review finding: none of the six singular policy/rule CRUD tools
+    checked for the SDK quirk -- all six returned bare None as a
+    'successful' result."""
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.policies.policies.get_okta_client")
+    async def test_get_policy_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.get_policy.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await get_policy(ctx=ctx_no_elicitation, policy_id=POLICY_ID)
+        result = {"error": str(exc_info.value)}
+
+        _assert_error_dict(result, must_contain="list_policies(")
+        assert POLICY_ID in result["error"]
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.policies.policies.get_okta_client")
+    async def test_create_policy_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.create_policy.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await create_policy(
+                ctx=ctx_no_elicitation,
+                policy_data={"type": "PASSWORD", "name": "Test Policy"},
+            )
+        result = {"error": str(exc_info.value)}
+
+        _assert_error_dict(result, must_contain="list_policies(")
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.policies.policies.get_okta_client")
+    async def test_update_policy_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.replace_policy.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await update_policy(
+                ctx=ctx_no_elicitation,
+                policy_id=POLICY_ID,
+                policy_data={"type": "PASSWORD", "name": "Test Policy"},
+            )
+        result = {"error": str(exc_info.value)}
+
+        _assert_error_dict(result, must_contain="get_policy()")
+        assert POLICY_ID in result["error"]
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.policies.policies.get_okta_client")
+    async def test_get_policy_rule_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.get_policy_rule.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await get_policy_rule(ctx=ctx_no_elicitation, policy_id=POLICY_ID, rule_id=RULE_ID)
+        result = {"error": str(exc_info.value)}
+
+        _assert_error_dict(result, must_contain="list_policy_rules(")
+        assert RULE_ID in result["error"]
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.policies.policies.get_okta_client")
+    async def test_create_policy_rule_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.create_policy_rule.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await create_policy_rule(
+                ctx=ctx_no_elicitation,
+                policy_id=POLICY_ID,
+                rule_data={"name": "Test Rule", "type": "PASSWORD"},
+            )
+        result = {"error": str(exc_info.value)}
+
+        _assert_error_dict(result, must_contain="list_policy_rules(")
+
+    @pytest.mark.asyncio
+    @patch("okta_mcp_server.tools.policies.policies.get_okta_client")
+    async def test_update_policy_rule_none_body_returns_error_dict(self, mock_get_client, ctx_no_elicitation):
+        client = AsyncMock()
+        client.replace_policy_rule.return_value = (None, MagicMock(), None)
+        mock_get_client.return_value = client
+
+        with pytest.raises(ToolError) as exc_info:
+            await update_policy_rule(
+                ctx=ctx_no_elicitation,
+                policy_id=POLICY_ID,
+                rule_id=RULE_ID,
+                rule_data={"name": "Test Rule", "type": "PASSWORD"},
+            )
+        result = {"error": str(exc_info.value)}
+
+        _assert_error_dict(result, must_contain="get_policy_rule()")
+        assert RULE_ID in result["error"]

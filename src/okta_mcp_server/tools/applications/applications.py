@@ -22,6 +22,7 @@ from okta_mcp_server.utils.pagination import (
     has_next_page,
     paginate_all_results,
 )
+from okta_mcp_server.utils.serialization import none_body_error
 from okta_mcp_server.utils.summarize import summarize_application, summarize_applications
 from okta_mcp_server.utils.validation import validate_ids
 
@@ -151,6 +152,13 @@ async def get_application(ctx: Context, app_id: str, expand: Optional[str] = Non
             logger.error(f"Okta API error while getting application {app_id}: {err}")
             raise ToolError(f"Okta API error: {err}")
 
+        if app is None:
+            raise ToolError(
+                none_body_error(
+                    "get_application", f"retrieving application {app_id!r}", "Verify the ID with list_applications()."
+                )["error"]
+            )
+
         logger.info(f"Successfully retrieved application: {app_id}")
         return summarize_application(app)
     except ToolError:
@@ -188,6 +196,15 @@ async def create_application(ctx: Context, app_config: Dict[str, Any], activate:
             logger.error(f"Okta API error while creating application: {err}")
             raise ToolError(f"Okta API error: {err}")
 
+        if app is None:
+            raise ToolError(
+                none_body_error(
+                    "create_application",
+                    "creating the application",
+                    "Use list_applications() to confirm and retrieve the new application.",
+                )["error"]
+            )
+
         logger.info("Successfully created application")
         return summarize_application(app)
     except ToolError:
@@ -222,6 +239,15 @@ async def update_application(ctx: Context, app_id: str, app_config: Dict[str, An
         if err:
             logger.error(f"Okta API error while updating application {app_id}: {err}")
             raise ToolError(f"Okta API error: {err}")
+
+        if app is None:
+            raise ToolError(
+                none_body_error(
+                    "update_application",
+                    f"updating application {app_id!r}",
+                    "Re-fetch with get_application() to confirm the current state.",
+                )["error"]
+            )
 
         logger.info(f"Successfully updated application: {app_id}")
         return summarize_application(app)

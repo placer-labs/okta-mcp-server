@@ -19,6 +19,7 @@ from okta_mcp_server.utils.pagination import (
     has_next_page,
     paginate_all_results,
 )
+from okta_mcp_server.utils.serialization import none_body_error
 from okta_mcp_server.utils.summarize import summarize_applications, summarize_group, summarize_groups, summarize_users
 from okta_mcp_server.utils.validation import validate_ids
 
@@ -148,6 +149,13 @@ async def get_group(group_id: str, ctx: Context | None = None):
             logger.error(f"Okta API error while getting group {group_id}: {err}")
             raise ToolError(f"Okta API error: {err}")
 
+        if group is None:
+            raise ToolError(
+                none_body_error("get_group", f"retrieving group {group_id!r}", "Verify the ID with list_groups().")[
+                    "error"
+                ]
+            )
+
         logger.info(f"Successfully retrieved group: {group_id}")
         return [summarize_group(group)]
     except ToolError:
@@ -184,6 +192,15 @@ async def create_group(profile: dict, ctx: Context | None = None):
         if err:
             logger.error(f"Okta API error while creating group: {err}")
             raise ToolError(f"Okta API error: {err}")
+
+        if group is None:
+            raise ToolError(
+                none_body_error(
+                    "create_group",
+                    f"creating group {profile.get('name', 'N/A')!r}",
+                    "Use list_groups() to confirm and retrieve the new group.",
+                )["error"]
+            )
 
         logger.info(f"Successfully created group: {group.id if group else 'unknown'}")
         return [summarize_group(group)]
@@ -297,6 +314,15 @@ async def update_group(group_id: str, profile: dict, ctx: Context | None = None)
         if err:
             logger.error(f"Okta API error while updating group {group_id}: {err}")
             raise ToolError(f"Okta API error: {err}")
+
+        if group is None:
+            raise ToolError(
+                none_body_error(
+                    "update_group",
+                    f"updating group {group_id!r}",
+                    "Re-fetch with get_group() to confirm the current state.",
+                )["error"]
+            )
 
         logger.info(f"Successfully updated group: {group_id}")
         return [summarize_group(group)]
