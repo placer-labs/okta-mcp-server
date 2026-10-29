@@ -7,7 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "loguru>=0.7.3",
     "fastmcp>=4.0.5",
-    "okta>=3.4.5",
+    "okta>=3.4.6",
     "requests>=2.34.2",
     "keyring>=25.7.0",
     "keyrings.alt>=5.0.2",
@@ -43,4 +43,17 @@ extra-paths = ["stubs"]
 [tool.uv]
 # multidict 7.1 dedupes keys() for case-insensitive dicts, which changes how
 # aiohttp header iteration behaves; hold at 6.x until that's been verified.
-constraint-dependencies = ["multidict<7"]
+constraint-dependencies = [
+    "multidict<7",
+    "urllib3>=2.7.0",
+    "cryptography>=50.0.0",
+    "starlette>=1.3.1",
+    "python-multipart>=0.0.31",
+    "click>=8.3.3",
+    "jaraco.context>=6.1.0",
+    "python-dotenv>=1.2.2",
+    "idna>=3.15",
+    "aiohttp>=3.14.3",
+    "anyio>=4.15.1",
+    "pygments>=2.21.0",
+]

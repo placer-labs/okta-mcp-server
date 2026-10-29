@@ -10,6 +10,7 @@ import json
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
+import okta.models as okta_models
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
 from loguru import logger
@@ -22,8 +23,27 @@ from okta_mcp_server.utils.pagination import (
     has_next_page,
     paginate_all_results,
 )
+from okta_mcp_server.utils.serialization import describe_exception, none_body_error
 from okta_mcp_server.utils.summarize import summarize_application, summarize_applications
 from okta_mcp_server.utils.validation import validate_ids
+
+_SIGN_ON_MODE_MODEL_MAP: Dict[str, Any] = {
+    "BOOKMARK": okta_models.BookmarkApplication,
+    "AUTO_LOGIN": okta_models.AutoLoginApplication,
+    "BASIC_AUTH": okta_models.BasicAuthApplication,
+    "BROWSER_PLUGIN": okta_models.BrowserPluginApplication,
+    "OPENID_CONNECT": okta_models.OpenIdConnectApplication,
+    "SAML_1_1": okta_models.Saml11Application,
+    "SAML_2_0": okta_models.SamlApplication,
+    "SECURE_PASSWORD_STORE": okta_models.SecurePasswordStoreApplication,
+    "WS_FEDERATION": okta_models.WsFederationApplication,
+}
+
+
+def _build_application_model(app_config: Dict[str, Any]) -> Any:
+    sign_on_mode = app_config.get("signOnMode") or app_config.get("sign_on_mode", "")
+    model_cls = _SIGN_ON_MODE_MODEL_MAP.get(str(sign_on_mode).upper(), okta_models.Application)
+    return model_cls.from_dict(app_config)
 
 
 @mcp.tool()
@@ -117,8 +137,8 @@ async def list_applications(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while listing applications: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while listing applications: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -151,13 +171,20 @@ async def get_application(ctx: Context, app_id: str, expand: Optional[str] = Non
             logger.error(f"Okta API error while getting application {app_id}: {err}")
             raise ToolError(f"Okta API error: {err}")
 
+        if app is None:
+            raise ToolError(
+                none_body_error(
+                    "get_application", f"retrieving application {app_id!r}", "Verify the ID with list_applications()."
+                )["error"]
+            )
+
         logger.info(f"Successfully retrieved application: {app_id}")
         return summarize_application(app)
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while getting application {app_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while getting application {app_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -182,19 +209,28 @@ async def create_application(ctx: Context, app_config: Dict[str, Any], activate:
         query_params = {"activate": activate}
 
         logger.debug("Calling Okta API to create application")
-        app, _, err = await client.create_application(app_config, **query_params)
+        app, _, err = await client.create_application(_build_application_model(app_config), **query_params)
 
         if err:
             logger.error(f"Okta API error while creating application: {err}")
             raise ToolError(f"Okta API error: {err}")
+
+        if app is None:
+            raise ToolError(
+                none_body_error(
+                    "create_application",
+                    "creating the application",
+                    "Use list_applications() to confirm and retrieve the new application.",
+                )["error"]
+            )
 
         logger.info("Successfully created application")
         return summarize_application(app)
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while creating application: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while creating application: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -217,19 +253,28 @@ async def update_application(ctx: Context, app_id: str, app_config: Dict[str, An
         client = await get_okta_client(manager)
 
         logger.debug(f"Calling Okta API to update application {app_id}")
-        app, _, err = await client.replace_application(app_id, app_config)
+        app, _, err = await client.replace_application(app_id, _build_application_model(app_config))
 
         if err:
             logger.error(f"Okta API error while updating application {app_id}: {err}")
             raise ToolError(f"Okta API error: {err}")
+
+        if app is None:
+            raise ToolError(
+                none_body_error(
+                    "update_application",
+                    f"updating application {app_id!r}",
+                    "Re-fetch with get_application() to confirm the current state.",
+                )["error"]
+            )
 
         logger.info(f"Successfully updated application: {app_id}")
         return summarize_application(app)
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while updating application {app_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while updating application {app_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -297,8 +342,8 @@ async def confirm_delete_application(ctx: Context, app_id: str, confirmation: st
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while deleting application {app_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while deleting application {app_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -331,8 +376,8 @@ async def activate_application(ctx: Context, app_id: str):
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while activating application {app_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while activating application {app_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -365,8 +410,8 @@ async def deactivate_application(ctx: Context, app_id: str):
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while deactivating application {app_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while deactivating application {app_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 # ---------------------------------------------------------------------------
@@ -571,8 +616,8 @@ async def list_catalog_apps(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while browsing OIN catalog: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while browsing OIN catalog: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -608,8 +653,8 @@ async def get_catalog_app(ctx: Context, app_name: str) -> dict:
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while getting catalog app {app_name}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while getting catalog app {app_name}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -674,5 +719,5 @@ async def install_oin_app(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while installing OIN app '{name}': {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while installing OIN app '{name}': {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e

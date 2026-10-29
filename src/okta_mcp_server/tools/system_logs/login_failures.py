@@ -24,6 +24,7 @@ from okta_mcp_server.server import mcp
 from okta_mcp_server.tools.system_logs.system_logs import check_logs_scope_error
 from okta_mcp_server.utils.client import _resolve_manager, get_okta_client
 from okta_mcp_server.utils.pagination import build_query_params, has_next_page, paginate_all_results
+from okta_mcp_server.utils.serialization import describe_exception
 from okta_mcp_server.utils.summarize import summarize_logs
 
 # eventTypes that represent a sign-in attempt, as opposed to the token, DNS and
@@ -129,7 +130,7 @@ async def get_login_failures(
     since = since or (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
     until = until or now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-    logger.debug(f"Time window: {since} → {until}, user_id={user_id}, q={q}")
+    logger.debug(f"Time window: {since} → {until}, user_id={user_id}, q set: {bool(q)}")
 
     manager = _resolve_manager(ctx)
 
@@ -143,11 +144,11 @@ async def get_login_failures(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while investigating login failures: {type(e).__name__}: {e}")
+        logger.error(f"Exception while investigating login failures: {type(e).__name__}: {describe_exception(e)}")
         scope_msg = check_logs_scope_error(e)
         if scope_msg:
             raise ToolError(scope_msg) from e
-        raise ToolError(f"Exception: {e}") from e
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
     failures = _categorise(summarize_logs(failure_events))
     denials = _categorise(summarize_logs(deny_events))

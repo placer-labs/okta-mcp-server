@@ -19,6 +19,7 @@ from okta_mcp_server.utils.pagination import (
     has_next_page,
     paginate_all_results,
 )
+from okta_mcp_server.utils.serialization import describe_exception, none_body_error
 from okta_mcp_server.utils.summarize import summarize_groups, summarize_user, summarize_users
 from okta_mcp_server.utils.validation import validate_ids
 
@@ -69,7 +70,8 @@ async def list_users(
     """
     logger.info("Listing users from Okta organization")
     logger.debug(
-        f"Search: '{search}', Filter: '{filter}', Q: '{q}', fetch_all: {fetch_all}, after: '{after}', limit: {limit}"
+        f"search set: {bool(search)}, filter set: {bool(filter)}, q set: {bool(q)}, fetch_all: {fetch_all}, "
+        f"after: '{after}', limit: {limit}"
     )
 
     # Validate limit parameter range
@@ -115,8 +117,8 @@ async def list_users(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while listing users: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while listing users: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -167,8 +169,8 @@ async def get_user_profile_attributes(user_id: Optional[str] = None, ctx: Contex
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while fetching profile attributes: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while fetching profile attributes: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -210,8 +212,8 @@ async def list_user_groups(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while listing groups for user {user_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while listing groups for user {user_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -250,8 +252,8 @@ async def get_user(user_id: str, ctx: Context | None = None):
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while getting user {user_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while getting user {user_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -273,9 +275,7 @@ async def create_user(profile: dict, activate: bool = True, ctx: Context | None 
         List containing the created user details.
     """
     logger.info("Creating new user in Okta organization")
-    logger.debug(
-        f"User profile: email={profile.get('email', 'N/A')}, login={profile.get('login', 'N/A')}, activate={activate}"
-    )
+    logger.debug(f"User profile fields: {sorted(profile)}, activate={activate}")
 
     manager = _resolve_manager(ctx)
 
@@ -291,13 +291,22 @@ async def create_user(profile: dict, activate: bool = True, ctx: Context | None 
             logger.error(f"Okta API error while creating user: {err}")
             raise ToolError(f"Okta API error: {err}")
 
+        if user is None:
+            raise ToolError(
+                none_body_error(
+                    "create_user",
+                    "creating the user",
+                    "Use list_users() to confirm and retrieve the new user.",
+                )["error"]
+            )
+
         logger.info(f"Successfully created user: {user.id if user else 'unknown'}")
         return [summarize_user(user)]
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while creating user: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while creating user: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -329,13 +338,22 @@ async def update_user(user_id: str, profile: dict, ctx: Context | None = None):
             logger.error(f"Okta API error while updating user {user_id}: {err}")
             raise ToolError(f"Okta API error: {err}")
 
+        if user is None:
+            raise ToolError(
+                none_body_error(
+                    "update_user",
+                    f"updating user {user_id!r}",
+                    "Re-fetch with get_user() to confirm the current state.",
+                )["error"]
+            )
+
         logger.info(f"Successfully updated user: {user_id}")
         return [summarize_user(user)]
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while updating user {user_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while updating user {user_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -371,8 +389,8 @@ async def deactivate_user(user_id: str, ctx: Context | None = None):
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while deactivating user {user_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while deactivating user {user_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -407,5 +425,5 @@ async def delete_deactivated_user(user_id: str, ctx: Context | None = None):
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while deleting user {user_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while deleting user {user_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e

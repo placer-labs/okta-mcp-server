@@ -37,6 +37,8 @@ from __future__ import annotations
 
 from loguru import logger
 
+from okta_mcp_server.utils.serialization import describe_exception
+
 # Name-mangled instance method on okta.api_client.ApiClient. It is the single
 # point where every response model (including each element of a List[...]) is
 # turned into a Pydantic object, so patching here covers all read paths.
@@ -108,7 +110,7 @@ def apply_okta_sdk_leniency() -> None:
             logger.debug(
                 "okta_compat: relaxing strict validation for "
                 f"{getattr(target, '__name__', target)} "
-                f"(id={data.get('id')}, name={data.get('name')}): {exc}"
+                f"(id={data.get('id')}): {describe_exception(exc)}"
             )
             return target.model_construct(**_fields_by_source_name(target, data))
 

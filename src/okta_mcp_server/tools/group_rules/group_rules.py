@@ -19,6 +19,7 @@ from okta_mcp_server.utils.pagination import (
     has_next_page,
     paginate_all_results,
 )
+from okta_mcp_server.utils.serialization import describe_exception
 from okta_mcp_server.utils.summarize import summarize_group_rule, summarize_group_rules
 from okta_mcp_server.utils.validation import validate_ids
 
@@ -122,8 +123,8 @@ async def list_group_rules(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while listing group rules: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while listing group rules: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -161,5 +162,5 @@ async def get_group_rule(rule_id: str, ctx: Context | None = None, expand: Optio
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while getting group rule {rule_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while getting group rule {rule_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
