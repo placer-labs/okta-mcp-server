@@ -79,7 +79,7 @@ from okta_mcp_server.utils.pagination import (
     paginate_all_results,
 )
 from okta_mcp_server.utils.scope_guard import require_scopes
-from okta_mcp_server.utils.serialization import json_response
+from okta_mcp_server.utils.serialization import describe_exception, json_response
 from okta_mcp_server.utils.validation import validate_ids
 
 # ---------------------------------------------------------------------------
@@ -252,8 +252,10 @@ async def list_email_templates(
         return create_paginated_response(serialized, response, fetch_all_used=fetch_all)
 
     except Exception as e:
-        logger.error(f"Exception listing email templates for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception listing email templates for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -299,9 +301,9 @@ async def get_email_template(
 
     except Exception as e:
         logger.error(
-            f"Exception getting email template '{template_name}' for brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception getting email template '{template_name}' for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -390,9 +392,9 @@ async def list_email_customizations(
 
     except Exception as e:
         logger.error(
-            f"Exception listing customizations for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception listing customizations for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -501,9 +503,9 @@ async def create_email_customization(
 
     except Exception as e:
         logger.error(
-            f"Exception creating customization for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception creating customization for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -553,9 +555,9 @@ async def get_email_customization(
 
     except Exception as e:
         logger.error(
-            f"Exception getting customization {customization_id} for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception getting customization {customization_id} for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -628,9 +630,9 @@ async def replace_email_customization(
 
     except Exception as e:
         logger.error(
-            f"Exception replacing customization {customization_id} for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception replacing customization {customization_id} for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -704,9 +706,9 @@ async def delete_email_customization(
 
     except Exception as e:
         logger.error(
-            f"Exception deleting customization {customization_id} for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception deleting customization {customization_id} for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -764,9 +766,9 @@ async def delete_all_email_customizations(
 
     except Exception as e:
         logger.error(
-            f"Exception deleting all customizations for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception deleting all customizations for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -823,9 +825,9 @@ async def get_email_customization_preview(
 
     except Exception as e:
         logger.error(
-            f"Exception getting preview for customization {customization_id} of template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception getting preview for customization {customization_id} of template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -880,9 +882,9 @@ async def get_email_default_content(
 
     except Exception as e:
         logger.error(
-            f"Exception getting default content for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception getting default content for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -955,9 +957,9 @@ async def get_email_default_content_preview(
 
     except Exception as e:
         logger.error(
-            f"Exception getting default preview for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception getting default preview for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -1007,9 +1009,9 @@ async def get_email_settings(
 
     except Exception as e:
         logger.error(
-            f"Exception getting email settings for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception getting email settings for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -1062,9 +1064,9 @@ async def replace_email_settings(
 
     except Exception as e:
         logger.error(
-            f"Exception replacing email settings for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception replacing email settings for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -1136,6 +1138,6 @@ async def send_test_email(
 
     except Exception as e:
         logger.error(
-            f"Exception sending test email for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {e}"
+            f"Exception sending test email for template '{template_name}' on brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
         )
-        return {"error": str(e)}
+        return {"error": describe_exception(e)}

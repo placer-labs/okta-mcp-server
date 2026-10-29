@@ -73,7 +73,7 @@ from okta_mcp_server.utils.messages import (
     DELETE_PREVIEW_SIGN_IN_PAGE,
 )
 from okta_mcp_server.utils.scope_guard import require_scopes
-from okta_mcp_server.utils.serialization import json_response
+from okta_mcp_server.utils.serialization import describe_exception, json_response
 from okta_mcp_server.utils.validation import validate_ids
 
 # ---------------------------------------------------------------------------
@@ -191,8 +191,10 @@ async def get_error_page_resources(
         return _serialize(page_root) or {}
 
     except Exception as e:
-        logger.error(f"Exception getting error page resources for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception getting error page resources for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -238,8 +240,10 @@ async def get_customized_error_page(
         return _serialize(page) or {}
 
     except Exception as e:
-        logger.error(f"Exception getting customized error page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception getting customized error page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -299,8 +303,10 @@ async def replace_customized_error_page(
         return _serialize(page) or {}
 
     except Exception as e:
-        logger.error(f"Exception replacing customized error page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception replacing customized error page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -351,8 +357,10 @@ async def delete_customized_error_page(
         }
 
     except Exception as e:
-        logger.error(f"Exception deleting customized error page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception deleting customized error page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -397,8 +405,10 @@ async def get_default_error_page(
         return _serialize(page) or {}
 
     except Exception as e:
-        logger.error(f"Exception getting default error page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception getting default error page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -443,8 +453,10 @@ async def get_preview_error_page(
         return _serialize(page) or {}
 
     except Exception as e:
-        logger.error(f"Exception getting preview error page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception getting preview error page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -501,8 +513,10 @@ async def replace_preview_error_page(
         return _serialize(page) or {}
 
     except Exception as e:
-        logger.error(f"Exception replacing preview error page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception replacing preview error page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -550,8 +564,10 @@ async def delete_preview_error_page(
         return {"success": True, "message": f"Preview error page for brand {brand_id} deleted."}
 
     except Exception as e:
-        logger.error(f"Exception deleting preview error page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception deleting preview error page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -601,8 +617,10 @@ async def get_sign_in_page_resources(
         return _serialize(page_root) or {}
 
     except Exception as e:
-        logger.error(f"Exception getting sign-in page resources for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception getting sign-in page resources for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -648,8 +666,10 @@ async def get_customized_sign_in_page(
         return _serialize(page) or {}
 
     except Exception as e:
-        logger.error(f"Exception getting customized sign-in page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception getting customized sign-in page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -724,8 +744,10 @@ async def replace_customized_sign_in_page(
         return _serialize(page) or {}
 
     except Exception as e:
-        logger.error(f"Exception replacing customized sign-in page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception replacing customized sign-in page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -777,8 +799,10 @@ async def delete_customized_sign_in_page(
         }
 
     except Exception as e:
-        logger.error(f"Exception deleting customized sign-in page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception deleting customized sign-in page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -825,8 +849,10 @@ async def get_default_sign_in_page(
         return _serialize(page) or {}
 
     except Exception as e:
-        logger.error(f"Exception getting default sign-in page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception getting default sign-in page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -872,8 +898,10 @@ async def get_preview_sign_in_page(
         return _serialize(page) or {}
 
     except Exception as e:
-        logger.error(f"Exception getting preview sign-in page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception getting preview sign-in page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -937,8 +965,10 @@ async def replace_preview_sign_in_page(
         return _serialize(page) or {}
 
     except Exception as e:
-        logger.error(f"Exception replacing preview sign-in page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception replacing preview sign-in page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -987,8 +1017,10 @@ async def delete_preview_sign_in_page(
         return {"success": True, "message": f"Preview sign-in page for brand {brand_id} deleted."}
 
     except Exception as e:
-        logger.error(f"Exception deleting preview sign-in page for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception deleting preview sign-in page for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -1042,8 +1074,10 @@ async def list_sign_in_widget_versions(
         }
 
     except Exception as e:
-        logger.error(f"Exception listing widget versions for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception listing widget versions for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -1092,8 +1126,10 @@ async def get_sign_out_page_settings(
         return _serialize(settings) or {}
 
     except Exception as e:
-        logger.error(f"Exception getting sign-out page settings for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception getting sign-out page settings for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 @mcp.tool()
@@ -1153,5 +1189,7 @@ async def replace_sign_out_page_settings(
         return _serialize(settings) or {}
 
     except Exception as e:
-        logger.error(f"Exception replacing sign-out page settings for brand {brand_id}: {e.__class__.__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception replacing sign-out page settings for brand {brand_id}: {e.__class__.__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}

@@ -57,7 +57,7 @@ from okta_mcp_server.utils.messages import (
     DELETE_THEME_LOGO,
 )
 from okta_mcp_server.utils.scope_guard import require_scopes
-from okta_mcp_server.utils.serialization import json_response, none_body_error
+from okta_mcp_server.utils.serialization import describe_exception, json_response, none_body_error
 from okta_mcp_server.utils.validation import InvalidFilePathError, validate_file_path, validate_ids
 
 # ---------------------------------------------------------------------------
@@ -118,8 +118,10 @@ async def list_brand_themes(
         }
 
     except Exception as e:
-        logger.error(f"Exception while listing themes for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while listing themes for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -173,8 +175,8 @@ async def get_brand_theme(
         return theme
 
     except Exception as e:
-        logger.error(f"Exception while retrieving theme {theme_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while retrieving theme {theme_id}: {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -306,8 +308,8 @@ async def replace_brand_theme(
         return theme
 
     except Exception as e:
-        logger.error(f"Exception while replacing theme {theme_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while replacing theme {theme_id}: {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -347,8 +349,8 @@ async def upload_brand_theme_logo(
     try:
         safe_path = validate_file_path(file_path, "file_path")
     except InvalidFilePathError as e:
-        logger.error(f"Rejected unsafe file_path for logo upload: {e}")
-        return {"error": str(e)}
+        logger.error(f"Rejected unsafe file_path for logo upload: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
     if not os.path.isfile(safe_path):
         return {"error": f"File not found: {file_path}"}
@@ -371,8 +373,10 @@ async def upload_brand_theme_logo(
         return {"url": url}
 
     except Exception as e:
-        logger.error(f"Exception while uploading logo for theme {theme_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while uploading logo for theme {theme_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -432,8 +436,10 @@ async def delete_brand_theme_logo(
         }
 
     except Exception as e:
-        logger.error(f"Exception while deleting logo for theme {theme_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while deleting logo for theme {theme_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -471,8 +477,8 @@ async def upload_brand_theme_favicon(
     try:
         safe_path = validate_file_path(file_path, "file_path")
     except InvalidFilePathError as e:
-        logger.error(f"Rejected unsafe file_path for favicon upload: {e}")
-        return {"error": str(e)}
+        logger.error(f"Rejected unsafe file_path for favicon upload: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
     if not os.path.isfile(safe_path):
         return {"error": f"File not found: {file_path}"}
@@ -495,8 +501,10 @@ async def upload_brand_theme_favicon(
         return {"url": url}
 
     except Exception as e:
-        logger.error(f"Exception while uploading favicon for theme {theme_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while uploading favicon for theme {theme_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -556,8 +564,10 @@ async def delete_brand_theme_favicon(
         }
 
     except Exception as e:
-        logger.error(f"Exception while deleting favicon for theme {theme_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while deleting favicon for theme {theme_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -597,8 +607,8 @@ async def upload_brand_theme_background_image(
     try:
         safe_path = validate_file_path(file_path, "file_path")
     except InvalidFilePathError as e:
-        logger.error(f"Rejected unsafe file_path for background image upload: {e}")
-        return {"error": str(e)}
+        logger.error(f"Rejected unsafe file_path for background image upload: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
     if not os.path.isfile(safe_path):
         return {"error": f"File not found: {file_path}"}
@@ -621,8 +631,10 @@ async def upload_brand_theme_background_image(
         return {"url": url}
 
     except Exception as e:
-        logger.error(f"Exception while uploading background image for theme {theme_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while uploading background image for theme {theme_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -684,5 +696,7 @@ async def delete_brand_theme_background_image(
         }
 
     except Exception as e:
-        logger.error(f"Exception while deleting background image for theme {theme_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while deleting background image for theme {theme_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}

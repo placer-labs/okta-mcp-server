@@ -23,7 +23,7 @@ from okta_mcp_server.utils.pagination import (
     has_next_page,
     paginate_all_results,
 )
-from okta_mcp_server.utils.serialization import none_body_error
+from okta_mcp_server.utils.serialization import describe_exception, none_body_error
 from okta_mcp_server.utils.summarize import summarize_application, summarize_applications
 from okta_mcp_server.utils.validation import validate_ids
 
@@ -137,8 +137,8 @@ async def list_applications(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while listing applications: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while listing applications: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -183,8 +183,8 @@ async def get_application(ctx: Context, app_id: str, expand: Optional[str] = Non
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while getting application {app_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while getting application {app_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -229,8 +229,8 @@ async def create_application(ctx: Context, app_config: Dict[str, Any], activate:
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while creating application: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while creating application: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -273,8 +273,8 @@ async def update_application(ctx: Context, app_id: str, app_config: Dict[str, An
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while updating application {app_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while updating application {app_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -342,8 +342,8 @@ async def confirm_delete_application(ctx: Context, app_id: str, confirmation: st
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while deleting application {app_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while deleting application {app_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -376,8 +376,8 @@ async def activate_application(ctx: Context, app_id: str):
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while activating application {app_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while activating application {app_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -410,8 +410,8 @@ async def deactivate_application(ctx: Context, app_id: str):
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while deactivating application {app_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while deactivating application {app_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 # ---------------------------------------------------------------------------
@@ -616,8 +616,8 @@ async def list_catalog_apps(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while browsing OIN catalog: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while browsing OIN catalog: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -653,8 +653,8 @@ async def get_catalog_app(ctx: Context, app_name: str) -> dict:
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while getting catalog app {app_name}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while getting catalog app {app_name}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -719,5 +719,5 @@ async def install_oin_app(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while installing OIN app '{name}': {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while installing OIN app '{name}': {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e

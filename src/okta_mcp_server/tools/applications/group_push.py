@@ -13,6 +13,7 @@ from loguru import logger
 
 from okta_mcp_server.server import mcp
 from okta_mcp_server.utils.client import _resolve_manager, get_okta_client
+from okta_mcp_server.utils.serialization import describe_exception
 
 
 def _summarize_mapping(m: Any) -> Dict[str, Any]:
@@ -105,5 +106,5 @@ async def list_group_push_mappings(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Error listing group push mappings for app {app_id}: {e}")
-        raise ToolError(f"Error listing group push mappings: {e}") from e
+        logger.error(f"Error listing group push mappings for app {app_id}: {describe_exception(e)}")
+        raise ToolError(f"Error listing group push mappings: {describe_exception(e)}") from e

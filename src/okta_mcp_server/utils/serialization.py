@@ -21,6 +21,7 @@ from typing import Any, Callable
 
 from fastmcp.exceptions import ToolError
 from loguru import logger
+from pydantic import ValidationError
 
 #: Maximum number of characters from str(exc) preserved in a ToolError message.
 _ERROR_MESSAGE_LIMIT = 1024
@@ -217,6 +218,27 @@ def none_body_error(tool_name: str, action: str, hint: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Exception messages
+# ---------------------------------------------------------------------------
+
+
+def describe_exception(exc: BaseException) -> str:
+    """``str(exc)``, except a pydantic ``ValidationError`` reports only field locations and error types.
+
+    Its default message echoes the rejected input, which for tool arguments can be
+    client secrets, private keys or user profile values.
+    """
+    if isinstance(exc, ValidationError):
+        details = "; ".join(
+            f"{'.'.join(map(str, err['loc'])) or '<root>'}: {err['type']}"
+            + (f" (expected {err['ctx']['expected']})" if "expected" in err.get("ctx", {}) else "")
+            for err in exc.errors(include_input=False, include_url=False)
+        )
+        return f"{exc.error_count()} validation error(s) for {exc.title}: {details}"
+    return str(exc)
+
+
+# ---------------------------------------------------------------------------
 # Decorator
 # ---------------------------------------------------------------------------
 
@@ -244,8 +266,9 @@ def json_response(fn: Callable) -> Callable:
             except ToolError:
                 raise
             except Exception as exc:
-                logger.exception(f"[json_response] {getattr(fn, '__name__', 'tool')} failed")
-                raise ToolError(f"{type(exc).__name__}: {str(exc)[:_ERROR_MESSAGE_LIMIT]}") from exc
+                message = f"{type(exc).__name__}: {describe_exception(exc)[:_ERROR_MESSAGE_LIMIT]}"
+                logger.error(f"[json_response] {getattr(fn, '__name__', 'tool')} failed: {message}")
+                raise ToolError(message) from exc
 
         return async_wrapper
 
@@ -258,7 +281,8 @@ def json_response(fn: Callable) -> Callable:
         except ToolError:
             raise
         except Exception as exc:
-            logger.exception(f"[json_response] {getattr(fn, '__name__', 'tool')} failed")
-            raise ToolError(f"{type(exc).__name__}: {str(exc)[:_ERROR_MESSAGE_LIMIT]}") from exc
+            message = f"{type(exc).__name__}: {describe_exception(exc)[:_ERROR_MESSAGE_LIMIT]}"
+            logger.error(f"[json_response] {getattr(fn, '__name__', 'tool')} failed: {message}")
+            raise ToolError(message) from exc
 
     return sync_wrapper

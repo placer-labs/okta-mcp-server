@@ -41,7 +41,7 @@ from okta_mcp_server.utils.client import _resolve_manager, get_okta_client
 from okta_mcp_server.utils.elicitation import DeleteConfirmation, elicit_or_fallback
 from okta_mcp_server.utils.messages import DELETE_CUSTOM_DOMAIN
 from okta_mcp_server.utils.scope_guard import require_scopes
-from okta_mcp_server.utils.serialization import json_response, none_body_error
+from okta_mcp_server.utils.serialization import describe_exception, json_response, none_body_error
 from okta_mcp_server.utils.validation import InvalidFilePathError, validate_file_path, validate_ids
 
 # ---------------------------------------------------------------------------
@@ -95,8 +95,8 @@ async def list_custom_domains(ctx: Context) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"Exception while listing custom domains: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while listing custom domains: {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -219,8 +219,8 @@ async def create_custom_domain(
         return created
 
     except Exception as e:
-        logger.error(f"Exception while creating custom domain: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while creating custom domain: {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -270,8 +270,10 @@ async def get_custom_domain(
         return domain
 
     except Exception as e:
-        logger.error(f"Exception while retrieving custom domain {domain_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while retrieving custom domain {domain_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -330,8 +332,8 @@ async def replace_custom_domain(
         return updated
 
     except Exception as e:
-        logger.error(f"Exception while replacing custom domain brand: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while replacing custom domain brand: {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -394,8 +396,10 @@ async def delete_custom_domain(
         }
 
     except Exception as e:
-        logger.error(f"Exception while deleting custom domain {domain_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while deleting custom domain {domain_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -455,8 +459,8 @@ async def upsert_custom_domain_certificate(
     try:
         safe_path = validate_file_path(private_key_file_path, "private_key_file_path")
     except InvalidFilePathError as e:
-        logger.error(f"Rejected unsafe private_key_file_path: {e}")
-        return {"error": str(e)}
+        logger.error(f"Rejected unsafe private_key_file_path: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
     # Read the private key from a local file path so the raw PEM key
     # value is never passed through the LLM conversation.
@@ -491,8 +495,10 @@ async def upsert_custom_domain_certificate(
         }
 
     except Exception as e:
-        logger.error(f"Exception while upserting certificate for domain {domain_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while upserting certificate for domain {domain_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -569,5 +575,7 @@ async def verify_custom_domain(
         return verified
 
     except Exception as e:
-        logger.error(f"Exception while verifying custom domain {domain_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while verifying custom domain {domain_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}

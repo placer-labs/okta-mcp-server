@@ -50,7 +50,7 @@ from okta_mcp_server.utils.elicitation import DeleteConfirmation, elicit_or_fall
 from okta_mcp_server.utils.messages import DELETE_EMAIL_DOMAIN
 from okta_mcp_server.utils.pagination import extract_after_cursor
 from okta_mcp_server.utils.scope_guard import require_scopes
-from okta_mcp_server.utils.serialization import json_response, none_body_error
+from okta_mcp_server.utils.serialization import describe_exception, json_response, none_body_error
 from okta_mcp_server.utils.validation import validate_ids
 
 for _member in list(_DNSRecordType):
@@ -122,8 +122,8 @@ async def list_email_domains(
         }
 
     except Exception as e:
-        logger.error(f"Exception while listing email domains: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while listing email domains: {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -248,8 +248,8 @@ async def create_email_domain(
         return created
 
     except Exception as e:
-        logger.error(f"Exception while creating email domain: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while creating email domain: {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -304,8 +304,10 @@ async def get_email_domain(
         return domain
 
     except Exception as e:
-        logger.error(f"Exception while retrieving email domain {email_domain_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while retrieving email domain {email_domain_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -367,8 +369,10 @@ async def replace_email_domain(
         return updated
 
     except Exception as e:
-        logger.error(f"Exception while replacing email domain {email_domain_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while replacing email domain {email_domain_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -443,8 +447,10 @@ async def delete_email_domain(
         }
 
     except Exception as e:
-        logger.error(f"Exception while deleting email domain {email_domain_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while deleting email domain {email_domain_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -537,5 +543,7 @@ async def verify_email_domain(
         return result
 
     except Exception as e:
-        logger.error(f"Exception while verifying email domain {email_domain_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while verifying email domain {email_domain_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}

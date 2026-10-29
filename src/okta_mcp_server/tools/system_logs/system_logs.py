@@ -20,6 +20,7 @@ from okta_mcp_server.utils.pagination import (
     has_next_page,
     paginate_all_results,
 )
+from okta_mcp_server.utils.serialization import describe_exception
 from okta_mcp_server.utils.summarize import summarize_logs
 
 # Workarounds for SDK v3 schema bugs that crash get_logs on real Okta data.
@@ -260,8 +261,8 @@ async def get_logs(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while retrieving system logs: {type(e).__name__}: {e}")
+        logger.error(f"Exception while retrieving system logs: {type(e).__name__}: {describe_exception(e)}")
         scope_msg = check_logs_scope_error(e)
         if scope_msg:
             raise ToolError(scope_msg)
-        raise ToolError(f"Exception: {e}") from e
+        raise ToolError(f"Exception: {describe_exception(e)}") from e

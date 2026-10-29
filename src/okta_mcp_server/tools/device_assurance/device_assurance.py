@@ -25,6 +25,7 @@ from pydantic import ValidationError
 
 from okta_mcp_server.server import mcp
 from okta_mcp_server.utils.client import _resolve_manager, get_okta_client
+from okta_mcp_server.utils.serialization import describe_exception
 from okta_mcp_server.utils.summarize import summarize_device_assurance_policies, summarize_device_assurance_policy
 from okta_mcp_server.utils.validation import validate_ids, validate_os_version_params
 
@@ -94,7 +95,7 @@ def _build_policy_model(raw: Dict[str, Any]) -> Any:
     try:
         model = DeviceAssurance.from_dict(raw)
     except ValidationError as ve:
-        raise ValueError(str(ve)) from ve
+        raise ValueError(describe_exception(ve)) from ve
     if model is None:
         raise ValueError(f"policy_data could not be read as a {platform} device assurance policy.")
 
@@ -247,8 +248,8 @@ async def list_device_assurance_policies(ctx: Context | None = None, version_thr
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while listing device assurance policies: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while listing device assurance policies: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -291,8 +292,8 @@ async def get_device_assurance_policy(ctx: Context, device_assurance_id: str):
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while getting device assurance policy: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while getting device assurance policy: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -374,8 +375,8 @@ async def create_device_assurance_policy(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while creating device assurance policy: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while creating device assurance policy: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -465,8 +466,8 @@ async def replace_device_assurance_policy(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while replacing device assurance policy: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while replacing device assurance policy: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -535,5 +536,5 @@ async def confirm_delete_device_assurance_policy(ctx: Context, device_assurance_
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while deleting device assurance policy: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while deleting device assurance policy: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e

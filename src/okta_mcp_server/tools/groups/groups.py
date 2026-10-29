@@ -19,7 +19,7 @@ from okta_mcp_server.utils.pagination import (
     has_next_page,
     paginate_all_results,
 )
-from okta_mcp_server.utils.serialization import none_body_error
+from okta_mcp_server.utils.serialization import describe_exception, none_body_error
 from okta_mcp_server.utils.summarize import summarize_applications, summarize_group, summarize_groups, summarize_users
 from okta_mcp_server.utils.validation import validate_ids
 
@@ -118,8 +118,8 @@ async def list_groups(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while listing groups: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while listing groups: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -161,8 +161,8 @@ async def get_group(group_id: str, ctx: Context | None = None):
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while getting group {group_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while getting group {group_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -207,8 +207,8 @@ async def create_group(profile: dict, ctx: Context | None = None):
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while creating group: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while creating group: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -281,8 +281,8 @@ async def confirm_delete_group(group_id: str, confirmation: str, ctx: Context | 
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while deleting group {group_id}: {type(e).__name__}: {e}")
-        return [{"error": f"Exception: {e}"}]
+        logger.error(f"Exception while deleting group {group_id}: {type(e).__name__}: {describe_exception(e)}")
+        return [{"error": f"Exception: {describe_exception(e)}"}]
 
 
 @mcp.tool()
@@ -329,8 +329,8 @@ async def update_group(group_id: str, profile: dict, ctx: Context | None = None)
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while updating group {group_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while updating group {group_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -415,8 +415,8 @@ async def list_group_users(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while listing users in group {group_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(f"Exception while listing users in group {group_id}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -488,8 +488,10 @@ async def list_group_apps(
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while listing applications for group {group_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(
+            f"Exception while listing applications for group {group_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -537,8 +539,10 @@ async def add_user_to_group(group_id: str, user_id: str, ctx: Context | None = N
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while adding user {user_id} to group {group_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(
+            f"Exception while adding user {user_id} to group {group_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
 @mcp.tool()
@@ -574,5 +578,7 @@ async def remove_user_from_group(group_id: str, user_id: str, ctx: Context | Non
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while removing user {user_id} from group {group_id}: {type(e).__name__}: {e}")
-        raise ToolError(f"Exception: {e}") from e
+        logger.error(
+            f"Exception while removing user {user_id} from group {group_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        raise ToolError(f"Exception: {describe_exception(e)}") from e

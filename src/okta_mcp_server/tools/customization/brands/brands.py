@@ -38,7 +38,7 @@ from okta_mcp_server.utils.pagination import (
     paginate_all_results,
 )
 from okta_mcp_server.utils.scope_guard import require_scopes
-from okta_mcp_server.utils.serialization import json_response, none_body_error
+from okta_mcp_server.utils.serialization import describe_exception, json_response, none_body_error
 from okta_mcp_server.utils.validation import validate_ids
 
 # ---------------------------------------------------------------------------
@@ -157,8 +157,8 @@ async def list_brands(
         return create_paginated_response(brands, response, fetch_all_used=fetch_all)
 
     except Exception as e:
-        logger.error(f"Exception while listing brands: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while listing brands: {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -215,8 +215,8 @@ async def get_brand(
         return brand
 
     except Exception as e:
-        logger.error(f"Exception while retrieving brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while retrieving brand {brand_id}: {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -295,8 +295,8 @@ async def create_brand(
         return brand
 
     except Exception as e:
-        logger.error(f"Exception while creating brand '{name}': {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while creating brand '{name}': {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -395,8 +395,8 @@ async def replace_brand(
         return brand
 
     except Exception as e:
-        logger.error(f"Exception while replacing brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while replacing brand {brand_id}: {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -460,8 +460,8 @@ async def delete_brand(
         return {"message": f"Brand {brand_id} deleted successfully."}
 
     except Exception as e:
-        logger.error(f"Exception while deleting brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(f"Exception while deleting brand {brand_id}: {type(e).__name__}: {describe_exception(e)}")
+        return {"error": describe_exception(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -522,5 +522,7 @@ async def list_brand_domains(
         }
 
     except Exception as e:
-        logger.error(f"Exception while listing domains for brand {brand_id}: {type(e).__name__}: {e}")
-        return {"error": str(e)}
+        logger.error(
+            f"Exception while listing domains for brand {brand_id}: {type(e).__name__}: {describe_exception(e)}"
+        )
+        return {"error": describe_exception(e)}
