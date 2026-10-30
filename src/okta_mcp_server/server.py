@@ -18,6 +18,7 @@ from typing import Literal, Optional, cast
 
 from fastmcp import FastMCP
 from loguru import logger
+from mcp.types import ToolAnnotations
 
 from okta_mcp_server.utils.auth.auth_manager import OktaAuthManager
 
@@ -194,7 +195,7 @@ if MCP_TRANSPORT == "streamable-http":
         )
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, idempotent_hint=True))
 def get_scope_status() -> dict:
     """Report which Okta MCP tools are disabled because their OAuth scope is not configured.
 
@@ -285,8 +286,9 @@ def main():
         system_logs,  # ruff: ignore[unused-import]
     )
     from okta_mcp_server.tools.users import users  # ruff: ignore[unused-import]
-    from okta_mcp_server.utils.scope_guard import prune_tools_by_scope
+    from okta_mcp_server.utils.scope_guard import annotate_tools_by_scope, prune_tools_by_scope
 
+    asyncio.run(annotate_tools_by_scope(mcp))
     asyncio.run(prune_tools_by_scope(mcp))
 
     if MCP_TRANSPORT == "streamable-http":

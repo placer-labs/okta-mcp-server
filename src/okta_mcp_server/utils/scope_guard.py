@@ -23,11 +23,14 @@ from typing import Any, Callable
 
 from fastmcp.exceptions import ToolError
 from loguru import logger
+from mcp.types import ToolAnnotations
 
 from okta_mcp_server.utils.scope_registry import TOOL_SCOPE_REGISTRY
 
 #: Maps tool_name → required_scope for every tool disabled at startup
 _DISABLED_TOOLS: dict[str, str] = {}
+
+_DESTRUCTIVE_PREFIXES = ("delete_", "confirm_delete_", "deactivate_", "remove_")
 
 #: The okta.* scopes configured at startup
 _CONFIGURED_SCOPES: set[str] = set()
@@ -130,3 +133,21 @@ async def prune_tools_by_scope(server: Any, raw_scopes: str | None = None) -> No
         f"[scope-guard] {len(registered) - len(_DISABLED_TOOLS)}/{len(registered)} tools enabled based on "
         f"OKTA_SCOPES; disabled: {sorted(_DISABLED_TOOLS) or 'none'}"
     )
+
+
+def tool_annotations(name: str, required_scope: str) -> ToolAnnotations:
+    """MCP behaviour hints derived from a tool's required scope and name."""
+    if required_scope.endswith(".read"):
+        return ToolAnnotations(read_only_hint=True, destructive_hint=False, idempotent_hint=True)
+    if name.startswith(_DESTRUCTIVE_PREFIXES):
+        return ToolAnnotations(read_only_hint=False, destructive_hint=True)
+    return ToolAnnotations(read_only_hint=False)
+
+
+async def annotate_tools_by_scope(server: Any) -> None:
+    """Set read-only/destructive hints on every registered tool in ``TOOL_SCOPE_REGISTRY``."""
+    for tool in await server.list_tools():
+        required = TOOL_SCOPE_REGISTRY.get(tool.name)
+        if required is None:
+            continue
+        tool.annotations = tool_annotations(tool.name, required)
