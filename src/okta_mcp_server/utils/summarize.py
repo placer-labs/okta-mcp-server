@@ -296,6 +296,20 @@ _LOG_FIELDS = [
 
 _LOG_ACTOR_FIELDS = ["id", "type", "displayName", "alternateId"]
 _LOG_TARGET_FIELDS = ["id", "type", "displayName", "alternateId"]
+_LOG_GEO_FIELDS = ["country", "state", "city"]
+_LOG_SECURITY_CONTEXT_FIELDS = ["asNumber", "asOrg", "isp", "isProxy"]
+
+
+def _summarize_log_client(d: Dict[str, Any]) -> Dict[str, Any]:
+    client = _sub(d, "client")
+    out = _pick_either(client, ["ipAddress", "zone"])
+    geo = _pick_either(_sub(client, "geographicalContext"), _LOG_GEO_FIELDS)
+    if geo:
+        out["geographicalContext"] = geo
+    raw_ua = _pick_either(_sub(client, "userAgent"), ["rawUserAgent"])
+    if raw_ua:
+        out["userAgent"] = raw_ua
+    return out
 
 
 def summarize_log(log: Any) -> Dict[str, Any]:
@@ -313,6 +327,12 @@ def summarize_log(log: Any) -> Dict[str, Any]:
             result["target"] = [_pick(_obj_to_dict(t), _LOG_TARGET_FIELDS) for t in targets]
         else:
             result["target"] = _obj_to_dict(targets)
+    client = _summarize_log_client(d)
+    if client:
+        result["client"] = client
+    security_context = _pick_either(_sub(d, "securityContext"), _LOG_SECURITY_CONTEXT_FIELDS)
+    if security_context:
+        result["securityContext"] = security_context
     return result
 
 
