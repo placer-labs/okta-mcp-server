@@ -97,3 +97,10 @@ def test_log_summary_omits_absent_client():
 
     assert "client" not in summary
     assert "securityContext" not in summary
+
+
+def test_log_user_agent_is_capped():
+    from okta_mcp_server.utils.summarize import summarize_log
+
+    log = {"eventType": "user.session.start", "client": {"userAgent": {"rawUserAgent": "A" * 5000}}}
+    assert len(summarize_log(log)["client"]["userAgent"]["rawUserAgent"]) == 256

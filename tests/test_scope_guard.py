@@ -13,6 +13,7 @@ import importlib
 
 import pytest
 from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
 
 from okta_mcp_server.utils import scope_guard
 from okta_mcp_server.utils.scope_registry import TOOL_SCOPE_REGISTRY
@@ -93,3 +94,44 @@ async def test_unmapped_tools_stay_enabled():
     await scope_guard.prune_tools_by_scope(mcp, "okta.groups.read")
 
     assert await _names(mcp) == {"some_new_tool"}
+
+
+@pytest.mark.asyncio
+async def test_read_only_mode_disables_write_and_unmapped_tools(monkeypatch):
+    monkeypatch.setenv("OKTA_MCP_READ_ONLY", "true")
+    mcp = _fake_server("list_users", "create_user", "delete_application", "some_new_tool")
+    await scope_guard.prune_tools_by_scope(mcp, "okta.users.manage okta.apps.manage")
+
+    assert await _names(mcp) == {"list_users"}
+    assert scope_guard.get_disabled_tools() == {
+        "create_user": "okta.users.manage",
+        "delete_application": "okta.apps.manage",
+        "some_new_tool": "unmapped",
+    }
+
+
+@pytest.mark.asyncio
+async def test_read_only_mode_applies_without_okta_scopes(monkeypatch):
+    monkeypatch.setenv("OKTA_MCP_READ_ONLY", "1")
+    mcp = _fake_server("list_users", "create_user")
+    await scope_guard.prune_tools_by_scope(mcp, "openid profile email")
+
+    assert await _names(mcp) == {"list_users"}
+
+
+@pytest.mark.asyncio
+async def test_read_only_mode_rejects_direct_write_calls(monkeypatch):
+    monkeypatch.setenv("OKTA_MCP_READ_ONLY", "true")
+    monkeypatch.setenv("OKTA_SCOPES", "okta.users.manage")
+
+    @scope_guard.require_scopes("okta.users.manage")
+    async def write():  # ruff: ignore[unused-async]
+        return "wrote"
+
+    @scope_guard.require_scopes("okta.users.read")
+    async def read():  # ruff: ignore[unused-async]
+        return "read"
+
+    with pytest.raises(ToolError, match="read-only"):
+        await write()
+    assert await read() == "read"

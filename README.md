@@ -517,6 +517,8 @@ The Okta MCP Server provides the following tools for LLMs to interact with your 
 | `list_admin_role_assignments` | `okta.roles.read`          | List users holding admin roles and the roles assigned to each      | - `Who are our Super Admins?` <br> - `Which admin roles come from group assignment?`                |
 | `list_app_admin_roles`        | `okta.roles.read`          | List admin roles assigned to a service app by OAuth `client_id`    | - `What admin roles does our Terraform service app hold?`                                           |
 
+Set `OKTA_MCP_READ_ONLY=true` to disable every tool that needs a `.manage` scope, and any tool without a scope mapping, regardless of `OKTA_SCOPES`. Direct calls to write tools are rejected as well.
+
 ## 🔐 Authentication
 
 The Okta MCP Server uses the Okta Management API and requires authentication to access your Okta tenant.

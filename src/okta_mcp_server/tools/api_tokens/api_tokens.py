@@ -11,6 +11,7 @@ from loguru import logger
 
 from okta_mcp_server.server import mcp
 from okta_mcp_server.utils.client import _resolve_manager, get_okta_client
+from okta_mcp_server.utils.pagination import has_next_page, paginate_all_results
 from okta_mcp_server.utils.serialization import describe_exception, none_body_error, okta_tool_error
 from okta_mcp_server.utils.summarize import summarize_api_tokens
 
@@ -45,7 +46,11 @@ async def list_api_tokens(ctx: Context):
             empty = none_body_error("list_api_tokens", "listing API tokens", "Call this tool again.")["error"]
             raise okta_tool_error(response, _SCOPE, "listing API tokens", fallback=empty)
 
-        items = summarize_api_tokens(list(tokens))
+        tokens = list(tokens)
+        if has_next_page(response):
+            tokens, _ = await paginate_all_results(client.list_api_tokens, {}, tokens, response)
+
+        items = summarize_api_tokens(tokens)
         logger.info(f"Successfully retrieved {len(items)} API token(s)")
         return {"items": items, "total_fetched": len(items)}
     except ToolError:

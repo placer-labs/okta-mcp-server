@@ -300,6 +300,9 @@ _LOG_GEO_FIELDS = ["country", "state", "city"]
 _LOG_SECURITY_CONTEXT_FIELDS = ["asNumber", "asOrg", "isp", "isProxy"]
 
 
+_MAX_UA_LEN = 256
+
+
 def _summarize_log_client(d: Dict[str, Any]) -> Dict[str, Any]:
     client = _sub(d, "client")
     out = _pick_either(client, ["ipAddress", "zone"])
@@ -307,6 +310,9 @@ def _summarize_log_client(d: Dict[str, Any]) -> Dict[str, Any]:
     if geo:
         out["geographicalContext"] = geo
     raw_ua = _pick_either(_sub(client, "userAgent"), ["rawUserAgent"])
+    if isinstance(raw_ua.get("rawUserAgent"), str):
+        # Caller-controlled; cap it so it can't carry a long injected payload.
+        raw_ua["rawUserAgent"] = raw_ua["rawUserAgent"][:_MAX_UA_LEN]
     if raw_ua:
         out["userAgent"] = raw_ua
     return out
