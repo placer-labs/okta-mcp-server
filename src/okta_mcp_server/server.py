@@ -18,6 +18,7 @@ from typing import Literal, Optional, cast
 
 from fastmcp import FastMCP
 from loguru import logger
+from mcp.types import ToolAnnotations
 
 from okta_mcp_server.utils.auth.auth_manager import OktaAuthManager
 
@@ -194,7 +195,7 @@ if MCP_TRANSPORT == "streamable-http":
         )
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, idempotent_hint=True))
 def get_scope_status() -> dict:
     """Report which Okta MCP tools are disabled because their OAuth scope is not configured.
 
@@ -257,11 +258,19 @@ def main():
     # OpenTelemetry traces + metrics. No-op unless OTEL_EXPORTER_OTLP_ENDPOINT is
     # set, so local/stdio runs are unaffected; the deployment points it at the
     # cluster OTLP collector to activate per-tool spans and error-rate metrics.
+    from okta_mcp_server.utils.caller import CallerContextMiddleware, build_rate_limit_middleware
     from okta_mcp_server.utils.telemetry import build_tool_middleware, configure_telemetry
+
+    mcp.add_middleware(CallerContextMiddleware())
 
     if configure_telemetry():
         mcp.add_middleware(build_tool_middleware())
         logger.info("OpenTelemetry tool-call middleware registered")
+
+    # Innermost of the three, so throttled tool calls still get a span and caller-tagged logs.
+    rate_limiter = build_rate_limit_middleware()
+    if rate_limiter is not None:
+        mcp.add_middleware(rate_limiter)
 
     from okta_mcp_server.tools.api_tokens import api_tokens  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.applications import (
@@ -285,11 +294,12 @@ def main():
         system_logs,  # ruff: ignore[unused-import]
     )
     from okta_mcp_server.tools.users import users  # ruff: ignore[unused-import]
-    from okta_mcp_server.utils.scope_guard import prune_tools_by_scope
+    from okta_mcp_server.utils.scope_guard import annotate_tools_by_scope, prune_tools_by_scope
 
+    asyncio.run(annotate_tools_by_scope(mcp))
     asyncio.run(prune_tools_by_scope(mcp))
 
     if MCP_TRANSPORT == "streamable-http":
-        mcp.run(transport=MCP_TRANSPORT, host="0.0.0.0", port=8000)
+        mcp.run(transport=MCP_TRANSPORT, host="0.0.0.0", port=8000)  # ruff: ignore[hardcoded-bind-all-interfaces] - container listener
     else:
         mcp.run(transport=cast(Literal["stdio", "sse", "streamable-http"], MCP_TRANSPORT))

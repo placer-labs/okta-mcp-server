@@ -414,8 +414,8 @@ async def delete_email_domain(
         domain_obj, _, fetch_err = await client.get_email_domain(email_domain_id)
         if not fetch_err and domain_obj is not None:
             domain_name = getattr(domain_obj, "domain", email_domain_id) or email_domain_id
-    except Exception:
-        pass  # Fall back to showing just the ID in the prompt.
+    except Exception as e:
+        logger.debug(f"Could not fetch email domain {email_domain_id!r} for prompt, showing ID: {e}")
 
     confirmation = await elicit_or_fallback(
         ctx,

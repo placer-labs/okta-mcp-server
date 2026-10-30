@@ -15,6 +15,7 @@ live OTLP collector is required.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -135,3 +136,39 @@ async def test_middleware_reraises_exceptions():
 
     with pytest.raises(RuntimeError, match="kaboom"):
         await mw.on_call_tool(_FakeContext(_FakeMessage("list_users")), call_next)
+
+
+@pytest.mark.asyncio
+async def test_middleware_records_caller_identity_not_token(monkeypatch):
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+    from okta_mcp_server.utils import caller
+
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    monkeypatch.setattr(trace, "get_tracer", provider.get_tracer)
+    token = SimpleNamespace(
+        token="raw-access-token",
+        client_id="cid",
+        subject=None,
+        claims={"sub": "jane@example.com", "uid": "00u1abcdEFGHijklMN2o"},
+    )
+    monkeypatch.setattr(caller, "_access_token", lambda: token)
+
+    mw = telemetry.build_tool_middleware()
+
+    async def call_next(_ctx):  # ruff: ignore[unused-async] - middleware awaits this callable
+        return _FakeResult(content=[_Block("ok")])
+
+    await mw.on_call_tool(_FakeContext(_FakeMessage("list_users")), call_next)
+
+    (span,) = exporter.get_finished_spans()
+    attrs = span.attributes or {}
+    assert attrs["enduser.id"] == "00u1abcdEFGHijklMN2o"
+    emitted = {str(v) for v in attrs.values()}
+    assert "raw-access-token" not in emitted
+    assert not any("jane@example.com" in v for v in emitted)

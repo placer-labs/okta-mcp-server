@@ -27,7 +27,8 @@ preview = true
 select = ["F",      # Pyflakes
           "E",      # pycodestyle
           "I",      # isort
-          "RUF"]    # Ruff-specific rules
+          "RUF",    # Ruff-specific rules
+          "S"]      # flake8-bandit
 
 # `ruff format` handles line length for code; long lines that remain are
 # license-header boilerplate and other intentionally untouched text.
@@ -53,3 +54,4 @@ docstring-code-format = true
 [lint.per-file-ignores]
 # Ported verbatim from upstream; keep its naming and docstrings so syncs merge cleanly.
 "src/okta_mcp_server/tools/customization/**" = ["ambiguous-unicode-character-string", "ambiguous-unicode-character-docstring", "ambiguous-unicode-character-comment", "used-dummy-variable"]
+"tests/**" = ["assert", "hardcoded-password-string", "hardcoded-password-func-arg", "hardcoded-temp-file"]

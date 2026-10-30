@@ -135,3 +135,43 @@ async def test_read_only_mode_rejects_direct_write_calls(monkeypatch):
     with pytest.raises(ToolError, match="read-only"):
         await write()
     assert await read() == "read"
+
+
+@pytest.mark.asyncio
+async def test_annotations_follow_scope():
+    mcp = _fake_server(*TOOL_SCOPE_REGISTRY)
+    await scope_guard.annotate_tools_by_scope(mcp)
+
+    for tool in await mcp.list_tools():
+        hints = tool.annotations
+        assert hints is not None, tool.name
+        if TOOL_SCOPE_REGISTRY[tool.name].endswith(".read"):
+            assert hints.read_only_hint is True, tool.name
+            assert hints.destructive_hint is False, tool.name
+        else:
+            assert hints.read_only_hint is False, tool.name
+    destructive = {t.name for t in await mcp.list_tools() if t.annotations and t.annotations.destructive_hint}
+    assert {"delete_group", "confirm_delete_application", "deactivate_user", "remove_user_from_group"} <= destructive
+    assert "create_user" not in destructive
+
+
+@pytest.mark.asyncio
+async def test_annotations_reach_clients():
+    from fastmcp import Client
+
+    mcp = _fake_server("list_users", "delete_group")
+    await scope_guard.annotate_tools_by_scope(mcp)
+    async with Client(mcp) as client:
+        tools = {t.name: t for t in await client.list_tools()}
+    assert tools["list_users"].annotations.read_only_hint is True
+    assert tools["delete_group"].annotations.destructive_hint is True
+
+
+@pytest.mark.asyncio
+async def test_real_tools_are_annotated(server):
+    await scope_guard.annotate_tools_by_scope(server)
+    tools = {t.name: t for t in await server.list_tools()}
+    for name, tool in tools.items():
+        assert tool.annotations is not None, name
+        expected_read_only = name == "get_scope_status" or TOOL_SCOPE_REGISTRY[name].endswith(".read")
+        assert tool.annotations.read_only_hint is expected_read_only, name

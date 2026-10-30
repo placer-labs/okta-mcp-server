@@ -599,8 +599,8 @@ async def list_catalog_apps(
             pages_fetched += 1
             try:
                 await ctx.info(f"Fetching catalog apps... {len(all_apps)} fetched so far ({pages_fetched} pages)")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Progress notification failed: {e}")
 
             cursor = _catalog_next_cursor(page, exhausted_below)
 

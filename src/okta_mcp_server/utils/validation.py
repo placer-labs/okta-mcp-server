@@ -141,7 +141,7 @@ ALLOWED_KEY_DIRS_ENV = "OKTA_MCP_ALLOWED_KEY_DIRS"
 # platform for this server; on Windows the defaults will be non-functional and
 # operators MUST set OKTA_MCP_ALLOWED_KEY_DIRS to a valid Windows path
 # (e.g. "C:\\Users\\<user>\\AppData\\Local\\Temp").
-_DEFAULT_ALLOWED_KEY_DIRS: tuple = ("/tmp", "/var/tmp")
+_DEFAULT_ALLOWED_KEY_DIRS: tuple = ("/tmp", "/var/tmp")  # ruff: ignore[hardcoded-temp-file] - path allowlist, nothing is created here
 
 
 def _get_raw_allowed_key_dirs() -> tuple:
