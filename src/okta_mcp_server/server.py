@@ -263,10 +263,12 @@ def main():
         mcp.add_middleware(build_tool_middleware())
         logger.info("OpenTelemetry tool-call middleware registered")
 
+    from okta_mcp_server.tools.api_tokens import api_tokens  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.applications import (
         applications,  # ruff: ignore[unused-import]
         group_push,  # ruff: ignore[unused-import]
     )
+    from okta_mcp_server.tools.authenticators import authenticators  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.customization.brands import brands  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.customization.custom_domains import custom_domains  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.customization.custom_pages import custom_pages  # ruff: ignore[unused-import]
@@ -277,6 +279,7 @@ def main():
     from okta_mcp_server.tools.group_rules import group_rules  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.groups import groups  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.policies import policies  # ruff: ignore[unused-import]
+    from okta_mcp_server.tools.roles import roles  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.system_logs import (
         login_failures,  # ruff: ignore[unused-import]
         system_logs,  # ruff: ignore[unused-import]

@@ -50,6 +50,11 @@ def configured_okta_scopes(raw: str | None = None) -> set[str]:
     return {s for s in raw.split() if s.startswith("okta.")}
 
 
+def read_only_mode() -> bool:
+    """``OKTA_MCP_READ_ONLY`` disables every write tool regardless of the configured scopes."""
+    return os.environ.get("OKTA_MCP_READ_ONLY", "").strip().lower() in ("1", "true", "yes")
+
+
 def scope_satisfied(required: str, configured: set[str]) -> bool:
     """A ``.manage`` scope also covers the ``.read`` scope for the same resource."""
     if required in configured:
@@ -71,6 +76,8 @@ def require_scopes(*required_scopes: str, error_return_type: str = "dict") -> Ca
     def decorator(fn: Callable) -> Callable:
         @functools.wraps(fn)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            if read_only_mode() and any(not s.endswith(".read") for s in required_scopes):
+                raise ToolError("This server runs in read-only mode (OKTA_MCP_READ_ONLY); write tools are disabled.")
             configured = configured_okta_scopes()
             missing = [s for s in required_scopes if configured and not scope_satisfied(s, configured)]
             if missing:
@@ -94,19 +101,26 @@ async def prune_tools_by_scope(server: Any, raw_scopes: str | None = None) -> No
     global _DISABLED_TOOLS, _CONFIGURED_SCOPES
     _DISABLED_TOOLS = {}
     _CONFIGURED_SCOPES = configured_okta_scopes(raw_scopes)
+    read_only = read_only_mode()
 
-    if not _CONFIGURED_SCOPES:
+    if not _CONFIGURED_SCOPES and not read_only:
         logger.warning("[scope-guard] No okta.* scopes in OKTA_SCOPES; leaving all tools enabled")
         return
 
     registered = {t.name for t in await server.list_tools()}
     unmapped = registered - TOOL_SCOPE_REGISTRY.keys() - {"get_scope_status"}
     if unmapped:
-        logger.warning(f"[scope-guard] Tools without a scope mapping stay enabled: {sorted(unmapped)}")
+        if read_only:
+            # Fail closed: an unmapped tool can't be proven read-only.
+            _DISABLED_TOOLS.update(dict.fromkeys(unmapped, "unmapped"))
+        else:
+            logger.warning(f"[scope-guard] Tools without a scope mapping stay enabled: {sorted(unmapped)}")
 
     for name in sorted(registered & TOOL_SCOPE_REGISTRY.keys()):
         required = TOOL_SCOPE_REGISTRY[name]
-        if not scope_satisfied(required, _CONFIGURED_SCOPES):
+        if read_only and not required.endswith(".read"):
+            _DISABLED_TOOLS[name] = required
+        elif _CONFIGURED_SCOPES and not scope_satisfied(required, _CONFIGURED_SCOPES):
             _DISABLED_TOOLS[name] = required
 
     if _DISABLED_TOOLS:

@@ -16,7 +16,8 @@ reducing token usage.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+import re
+from typing import Any, Dict, List, Optional
 
 
 def _obj_to_dict(obj: Any) -> Dict[str, Any]:
@@ -47,6 +48,34 @@ def _pick(source: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
     return {k: source[k] for k in keys if k in source}
 
 
+def _snake(key: str) -> str:
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", key).lower()
+
+
+def _sub(source: Any, key: str) -> Dict[str, Any]:
+    """Return the nested object at *key* (camelCase or snake_case) as a dict, or {}."""
+    if not isinstance(source, dict):
+        return {}
+    value = source.get(key)
+    if value is None:
+        value = source.get(_snake(key))
+    if value is None:
+        return {}
+    return _obj_to_dict(value)
+
+
+def _pick_either(source: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
+    """Like ``_pick`` but also matches the snake_case form; output is keyed by *keys*."""
+    out: Dict[str, Any] = {}
+    for k in keys:
+        v = source.get(k)
+        if v is None:
+            v = source.get(_snake(k))
+        if v is not None:
+            out[k] = v
+    return out
+
+
 # ── Applications ──────────────────────────────────────────────────────────
 
 _APP_FIELDS = [
@@ -71,6 +100,82 @@ def summarize_application(app: Any) -> Dict[str, Any]:
 def summarize_applications(apps: List[Any]) -> List[Dict[str, Any]]:
     """Summarize a list of Application objects."""
     return [summarize_application(a) for a in apps]
+
+
+# Allowlists only: settings.app and credential secrets must never be surfaced.
+_APP_VISIBILITY_FIELDS = ["autoLaunch", "autoSubmitToolbar", "hide"]
+_APP_OAUTH_SETTINGS_FIELDS = [
+    "redirect_uris",
+    "post_logout_redirect_uris",
+    "grant_types",
+    "response_types",
+    "application_type",
+    "consent_method",
+    "issuer_mode",
+    "wildcard_redirect",
+    "pkce_required",
+    "initiate_login_uri",
+    "idp_initiated_login",
+]
+_APP_OAUTH_CREDENTIAL_FIELDS = ["client_id", "token_endpoint_auth_method", "pkce_required", "autoKeyRotation"]
+_APP_SIGNING_FIELDS = ["kid", "rotationMode"]
+_APP_SAML_SIGN_ON_FIELDS = [
+    "ssoAcsUrl",
+    "audience",
+    "recipient",
+    "destination",
+    "assertionSigned",
+    "responseSigned",
+    "signatureAlgorithm",
+    "digestAlgorithm",
+    "honorForceAuthn",
+    "authnContextClassRef",
+    "subjectNameIdFormat",
+    "idpIssuer",
+    "requestCompressed",
+    "allowMultipleAcsEndpoints",
+]
+
+
+def _compact(d: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: v for k, v in d.items() if v not in (None, {})}
+
+
+def summarize_application_detail(app: Any) -> Dict[str, Any]:
+    """Return the compact summary plus allowlisted security-relevant settings and credentials."""
+    d = _obj_to_dict(app)
+    result = _pick(d, _APP_FIELDS)
+
+    visibility = _pick_either(_sub(d, "visibility"), _APP_VISIBILITY_FIELDS)
+    if visibility:
+        result["visibility"] = visibility
+
+    settings = _sub(d, "settings")
+    sign_on = _pick_either(_sub(settings, "signOn"), _APP_SAML_SIGN_ON_FIELDS)
+    slo_enabled = _sub(_sub(settings, "signOn"), "slo").get("enabled")
+    if slo_enabled is not None:
+        sign_on["slo"] = {"enabled": slo_enabled}
+    admin_note = _sub(settings, "notes").get("admin")
+    settings_out = _compact(
+        {
+            "oauthClient": _pick_either(_sub(settings, "oauthClient"), _APP_OAUTH_SETTINGS_FIELDS),
+            "signOn": sign_on,
+            "notes": {"admin": admin_note} if admin_note is not None else None,
+        }
+    )
+    if settings_out:
+        result["settings"] = settings_out
+
+    credentials = _sub(d, "credentials")
+    credentials_out = _compact(
+        {
+            "oauthClient": _pick_either(_sub(credentials, "oauthClient"), _APP_OAUTH_CREDENTIAL_FIELDS),
+            "signing": _pick_either(_sub(credentials, "signing"), _APP_SIGNING_FIELDS),
+        }
+    )
+    if credentials_out:
+        result["credentials"] = credentials_out
+    return result
 
 
 # ── Groups ────────────────────────────────────────────────────────────────
@@ -191,6 +296,26 @@ _LOG_FIELDS = [
 
 _LOG_ACTOR_FIELDS = ["id", "type", "displayName", "alternateId"]
 _LOG_TARGET_FIELDS = ["id", "type", "displayName", "alternateId"]
+_LOG_GEO_FIELDS = ["country", "state", "city"]
+_LOG_SECURITY_CONTEXT_FIELDS = ["asNumber", "asOrg", "isp", "isProxy"]
+
+
+_MAX_UA_LEN = 256
+
+
+def _summarize_log_client(d: Dict[str, Any]) -> Dict[str, Any]:
+    client = _sub(d, "client")
+    out = _pick_either(client, ["ipAddress", "zone"])
+    geo = _pick_either(_sub(client, "geographicalContext"), _LOG_GEO_FIELDS)
+    if geo:
+        out["geographicalContext"] = geo
+    raw_ua = _pick_either(_sub(client, "userAgent"), ["rawUserAgent"])
+    if isinstance(raw_ua.get("rawUserAgent"), str):
+        # Caller-controlled; cap it so it can't carry a long injected payload.
+        raw_ua["rawUserAgent"] = raw_ua["rawUserAgent"][:_MAX_UA_LEN]
+    if raw_ua:
+        out["userAgent"] = raw_ua
+    return out
 
 
 def summarize_log(log: Any) -> Dict[str, Any]:
@@ -208,6 +333,12 @@ def summarize_log(log: Any) -> Dict[str, Any]:
             result["target"] = [_pick(_obj_to_dict(t), _LOG_TARGET_FIELDS) for t in targets]
         else:
             result["target"] = _obj_to_dict(targets)
+    client = _summarize_log_client(d)
+    if client:
+        result["client"] = client
+    security_context = _pick_either(_sub(d, "securityContext"), _LOG_SECURITY_CONTEXT_FIELDS)
+    if security_context:
+        result["securityContext"] = security_context
     return result
 
 
@@ -316,3 +447,80 @@ def summarize_device_assurance_policy(policy: Any) -> Dict[str, Any]:
 def summarize_device_assurance_policies(policies: List[Any]) -> List[Dict[str, Any]]:
     """Summarize a list of device assurance policies."""
     return [summarize_device_assurance_policy(p) for p in policies]
+
+
+# ── API tokens ────────────────────────────────────────────────
+
+_API_TOKEN_FIELDS = [
+    "id",
+    "name",
+    "userId",
+    "clientName",
+    "created",
+    "lastUpdated",
+    "expiresAt",
+    "network",
+    "tokenWindow",
+]
+
+
+def summarize_api_token(token: Any) -> Dict[str, Any]:
+    """Return API token metadata. The API never returns token values; this allowlist keeps it that way."""
+    return _pick_either(_obj_to_dict(token), _API_TOKEN_FIELDS)
+
+
+def summarize_api_tokens(tokens: List[Any]) -> List[Dict[str, Any]]:
+    return [summarize_api_token(t) for t in tokens]
+
+
+# ── Authenticators ────────────────────────────────────────────
+
+_AUTHENTICATOR_FIELDS = ["id", "key", "name", "status", "type", "created", "lastUpdated"]
+_SECRET_KEY_RE = re.compile(r"secret|password|private|hmac|credential|integration_?key|api_?key", re.IGNORECASE)
+
+
+def _scrub(value: Any) -> Any:
+    """Recursively drop keys that look like secrets."""
+    if isinstance(value, dict):
+        return {k: _scrub(v) for k, v in value.items() if not _SECRET_KEY_RE.search(str(k))}
+    if isinstance(value, list):
+        return [_scrub(v) for v in value]
+    if hasattr(value, "model_dump"):
+        return _scrub(_obj_to_dict(value))
+    return value
+
+
+def summarize_authenticator(authenticator: Any) -> Dict[str, Any]:
+    """Return an authenticator's identity, status and settings; provider configuration (Duo keys etc.) is omitted."""
+    d = _obj_to_dict(authenticator)
+    result = _pick_either(d, _AUTHENTICATOR_FIELDS)
+    settings = _sub(d, "settings")
+    if settings:
+        result["settings"] = _scrub(settings)
+    provider_type = _sub(d, "provider").get("type")
+    if provider_type is not None:
+        result["provider"] = {"type": provider_type}
+    return result
+
+
+def summarize_authenticators(authenticators: List[Any]) -> List[Dict[str, Any]]:
+    return [summarize_authenticator(a) for a in authenticators]
+
+
+# ── Admin roles ───────────────────────────────────────────────
+
+_ROLE_FIELDS = ["id", "type", "label", "assignmentType", "status", "role", "resource-set", "created", "lastUpdated"]
+
+
+def summarize_role(role: Any) -> Dict[str, Any]:
+    """Return a role assignment, unwrapping the SDK's oneOf (StandardRole | CustomRole) container."""
+    inner: Optional[Any] = getattr(role, "actual_instance", None)
+    d = _obj_to_dict(inner if inner is not None else role)
+    out = _pick_either(d, _ROLE_FIELDS)
+    if "resource-set" not in out and d.get("resource_set") is not None:
+        out["resource-set"] = d["resource_set"]
+    return out
+
+
+def summarize_roles(roles: List[Any]) -> List[Dict[str, Any]]:
+    return [summarize_role(r) for r in roles]

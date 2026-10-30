@@ -63,6 +63,35 @@ def _fields_by_source_name(klass, data: dict) -> dict:
     return {mapping.get(key, key): value for key, value in data.items()}
 
 
+def _resolve_one_of(klass, data: dict, models, errors: tuple):
+    """Pick a concrete schema for a oneOf wrapper whose schemas all match *data*.
+
+    Generated wrappers (e.g. ``ListRolesForClient200ResponseInner``: StandardRole |
+    CustomRole) reject input that validates against more than one schema, which
+    for roles is every response. Prefer the schema that recognises the most input
+    keys, then the narrower one.
+    """
+    fields = getattr(klass, "model_fields", {})
+    if "actual_instance" not in fields or "one_of_schemas" not in fields:
+        return None
+    best = None
+    for name in sorted(fields["one_of_schemas"].default or ()):
+        schema = getattr(models, name, None)
+        if schema is None:
+            continue
+        try:
+            instance = schema.from_dict(data)
+        except errors:
+            continue
+        known = {f.alias or n for n, f in schema.model_fields.items()}
+        rank = (len(known & data.keys()), -len(known))
+        if best is None or rank > best[0]:
+            best = (rank, instance)
+    if best is None:
+        return None
+    return klass.model_construct(actual_instance=best[1])
+
+
 def apply_okta_sdk_leniency() -> None:
     """Patch the Okta SDK to tolerate apps that violate its strict model schema.
 
@@ -94,6 +123,10 @@ def apply_okta_sdk_leniency() -> None:
         except (ValidationError, ValueError) as exc:
             if not isinstance(data, dict):
                 raise
+
+            resolved = _resolve_one_of(klass, data, okta.models, (ValidationError, ValueError, TypeError))
+            if resolved is not None:
+                return resolved
 
             # Resolve the concrete subclass for discriminated unions
             # (Application -> SamlApplication / BrowserPluginApplication / ...).

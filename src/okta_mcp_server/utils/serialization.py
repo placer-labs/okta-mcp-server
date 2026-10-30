@@ -238,6 +238,17 @@ def describe_exception(exc: BaseException) -> str:
     return str(exc)
 
 
+def okta_tool_error(err: Any, scope: str, action: str, fallback: str | None = None) -> ToolError:
+    """Build a ToolError for an SDK error or response, with a missing-scope hint on 401/403."""
+    status = getattr(err, "status", None) or getattr(err, "status_code", None)
+    if status in (401, 403, "401", "403"):
+        return ToolError(
+            f"Authorization error (HTTP {status}) while {action}: the OAuth client is missing the '{scope}' scope. "
+            "Grant it to the Okta OIDC app, make sure OKTA_SCOPES requests it, and re-authenticate before retrying."
+        )
+    return ToolError(fallback or f"Okta API error: {err}")
+
+
 # ---------------------------------------------------------------------------
 # Decorator
 # ---------------------------------------------------------------------------
