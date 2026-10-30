@@ -79,6 +79,13 @@ TOOL_SCOPE_REGISTRY: dict[str, str] = {
     "replace_device_assurance_policy": "okta.deviceAssurance.manage",
     "delete_device_assurance_policy": "okta.deviceAssurance.manage",
     "confirm_delete_device_assurance_policy": "okta.deviceAssurance.manage",
+    # API tokens
+    "list_api_tokens": "okta.apiTokens.read",
+    # Authenticators
+    "list_authenticators": "okta.authenticators.read",
+    # Admin roles
+    "list_admin_role_assignments": "okta.roles.read",
+    "list_app_admin_roles": "okta.roles.read",
     # System logs
     "get_logs": "okta.logs.read",
     "get_login_failures": "okta.logs.read",

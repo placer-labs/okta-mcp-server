@@ -508,6 +508,15 @@ The Okta MCP Server provides the following tools for LLMs to interact with your 
 | ----------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `get_logs`  | Retrieve system logs from your Okta org | - `Show me recent login attempts` <br> - `Find failed logins from the past 24 hours` <br> - `Get authentication logs for user john.doe@company.com`     |
 
+### Security Visibility (read-only)
+
+| Tool                          | Scope                      | Description                                                        | Usage Examples                                                                                       |
+| ----------------------------- | -------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `list_api_tokens`             | `okta.apiTokens.read`      | List API token metadata (owner, client, expiry, network); never token values | - `Which API tokens exist and who owns them?` <br> - `Are any API tokens unrestricted by network?`   |
+| `list_authenticators`         | `okta.authenticators.read` | List authenticators with status and non-secret settings            | - `Which authenticators are active?` <br> - `Is email allowed for authentication or only recovery?` |
+| `list_admin_role_assignments` | `okta.roles.read`          | List users holding admin roles and the roles assigned to each      | - `Who are our Super Admins?` <br> - `Which admin roles come from group assignment?`                |
+| `list_app_admin_roles`        | `okta.roles.read`          | List admin roles assigned to a service app by OAuth `client_id`    | - `What admin roles does our Terraform service app hold?`                                           |
+
 ## 🔐 Authentication
 
 The Okta MCP Server uses the Okta Management API and requires authentication to access your Okta tenant.

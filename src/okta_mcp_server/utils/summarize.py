@@ -17,7 +17,7 @@ reducing token usage.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 def _obj_to_dict(obj: Any) -> Dict[str, Any]:
@@ -441,3 +441,80 @@ def summarize_device_assurance_policy(policy: Any) -> Dict[str, Any]:
 def summarize_device_assurance_policies(policies: List[Any]) -> List[Dict[str, Any]]:
     """Summarize a list of device assurance policies."""
     return [summarize_device_assurance_policy(p) for p in policies]
+
+
+# ── API tokens ────────────────────────────────────────────────
+
+_API_TOKEN_FIELDS = [
+    "id",
+    "name",
+    "userId",
+    "clientName",
+    "created",
+    "lastUpdated",
+    "expiresAt",
+    "network",
+    "tokenWindow",
+]
+
+
+def summarize_api_token(token: Any) -> Dict[str, Any]:
+    """Return API token metadata. The API never returns token values; this allowlist keeps it that way."""
+    return _pick_either(_obj_to_dict(token), _API_TOKEN_FIELDS)
+
+
+def summarize_api_tokens(tokens: List[Any]) -> List[Dict[str, Any]]:
+    return [summarize_api_token(t) for t in tokens]
+
+
+# ── Authenticators ────────────────────────────────────────────
+
+_AUTHENTICATOR_FIELDS = ["id", "key", "name", "status", "type", "created", "lastUpdated"]
+_SECRET_KEY_RE = re.compile(r"secret|password|private|hmac|credential|integration_?key|api_?key", re.IGNORECASE)
+
+
+def _scrub(value: Any) -> Any:
+    """Recursively drop keys that look like secrets."""
+    if isinstance(value, dict):
+        return {k: _scrub(v) for k, v in value.items() if not _SECRET_KEY_RE.search(str(k))}
+    if isinstance(value, list):
+        return [_scrub(v) for v in value]
+    if hasattr(value, "model_dump"):
+        return _scrub(_obj_to_dict(value))
+    return value
+
+
+def summarize_authenticator(authenticator: Any) -> Dict[str, Any]:
+    """Return an authenticator's identity, status and settings; provider configuration (Duo keys etc.) is omitted."""
+    d = _obj_to_dict(authenticator)
+    result = _pick_either(d, _AUTHENTICATOR_FIELDS)
+    settings = _sub(d, "settings")
+    if settings:
+        result["settings"] = _scrub(settings)
+    provider_type = _sub(d, "provider").get("type")
+    if provider_type is not None:
+        result["provider"] = {"type": provider_type}
+    return result
+
+
+def summarize_authenticators(authenticators: List[Any]) -> List[Dict[str, Any]]:
+    return [summarize_authenticator(a) for a in authenticators]
+
+
+# ── Admin roles ───────────────────────────────────────────────
+
+_ROLE_FIELDS = ["id", "type", "label", "assignmentType", "status", "role", "resource-set", "created", "lastUpdated"]
+
+
+def summarize_role(role: Any) -> Dict[str, Any]:
+    """Return a role assignment, unwrapping the SDK's oneOf (StandardRole | CustomRole) container."""
+    inner: Optional[Any] = getattr(role, "actual_instance", None)
+    d = _obj_to_dict(inner if inner is not None else role)
+    out = _pick_either(d, _ROLE_FIELDS)
+    if "resource-set" not in out and d.get("resource_set") is not None:
+        out["resource-set"] = d["resource_set"]
+    return out
+
+
+def summarize_roles(roles: List[Any]) -> List[Dict[str, Any]]:
+    return [summarize_role(r) for r in roles]

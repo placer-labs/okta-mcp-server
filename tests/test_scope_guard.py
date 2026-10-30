@@ -18,12 +18,15 @@ from okta_mcp_server.utils import scope_guard
 from okta_mcp_server.utils.scope_registry import TOOL_SCOPE_REGISTRY
 
 _TOOL_MODULES = [
+    "api_tokens.api_tokens",
     "applications.applications",
     "applications.group_push",
+    "authenticators.authenticators",
     "device_assurance.device_assurance",
     "group_rules.group_rules",
     "groups.groups",
     "policies.policies",
+    "roles.roles",
     "system_logs.login_failures",
     "system_logs.system_logs",
     "users.users",
