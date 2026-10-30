@@ -128,3 +128,19 @@ def test_patch_is_idempotent():
     apply_okta_sdk_leniency()
     second = ApiClient._ApiClient__deserialize_model
     assert first is second
+
+
+_STANDARD_ROLE = {"id": "ra1", "type": "SUPER_ADMIN", "label": "Super Administrator", "assignmentType": "CLIENT"}
+_CUSTOM_ROLE = {"id": "ra2", "type": "CUSTOM", "label": "Helpdesk", "role": "cr0", "resource-set": "iam0"}
+
+
+def test_ambiguous_one_of_roles_resolve_to_a_concrete_schema(deserializer):
+    roles = deserializer.deserialize(
+        json.dumps([_STANDARD_ROLE, _CUSTOM_ROLE]), "List[ListRolesForClient200ResponseInner]"
+    )
+
+    standard, custom = (r.actual_instance for r in roles)
+    assert type(standard).__name__ == "StandardRole"
+    assert standard.label == "Super Administrator"
+    assert type(custom).__name__ == "CustomRole"
+    assert custom.resource_set == "iam0"
