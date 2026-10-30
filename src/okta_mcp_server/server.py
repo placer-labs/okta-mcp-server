@@ -290,6 +290,6 @@ def main():
     asyncio.run(prune_tools_by_scope(mcp))
 
     if MCP_TRANSPORT == "streamable-http":
-        mcp.run(transport=MCP_TRANSPORT, host="0.0.0.0", port=8000)
+        mcp.run(transport=MCP_TRANSPORT, host="0.0.0.0", port=8000)  # ruff: ignore[hardcoded-bind-all-interfaces] - container listener
     else:
         mcp.run(transport=cast(Literal["stdio", "sse", "streamable-http"], MCP_TRANSPORT))

@@ -23,6 +23,7 @@ from loguru import logger
 SERVICE_NAME = "OktaAuthManager"
 # Treat JWTs this close to expiry as expired, to absorb clock skew.
 _TOKEN_EXPIRY_SAFETY_MARGIN_SECONDS = 60
+_HTTP_TIMEOUT_SECONDS = 30
 
 
 @dataclass
@@ -132,7 +133,7 @@ class OktaAuthManager:
             logger.debug(f"Requesting token from: {token_url}")
             logger.debug(f"Scopes: {self.scopes}")
 
-            response = requests.post(token_url, headers=headers, data=data)
+            response = requests.post(token_url, headers=headers, data=data, timeout=_HTTP_TIMEOUT_SECONDS)
             logger.debug(f"Response status code: {response.status_code}")
 
             if response.status_code == 200:
@@ -173,7 +174,7 @@ class OktaAuthManager:
         logger.debug(f"Request data: client_id={self.client_id}, scope={self.scopes}")
 
         try:
-            response = requests.post(auth_url, headers=headers, data=data)
+            response = requests.post(auth_url, headers=headers, data=data, timeout=_HTTP_TIMEOUT_SECONDS)
             logger.debug(f"Response status code: {response.status_code}")
 
             response.raise_for_status()
@@ -208,7 +209,7 @@ class OktaAuthManager:
             logger.debug(f"Polling attempt #{poll_count}")
 
             try:
-                response = requests.post(token_url, headers=headers, data=data)
+                response = requests.post(token_url, headers=headers, data=data, timeout=_HTTP_TIMEOUT_SECONDS)
                 resp_json = response.json()
                 logger.debug(f"Poll response status: {response.status_code}")
 
@@ -264,7 +265,7 @@ class OktaAuthManager:
         logger.debug(f"Refresh token request URL: {token_url}")
 
         try:
-            response = requests.post(token_url, headers=headers, data=data)
+            response = requests.post(token_url, headers=headers, data=data, timeout=_HTTP_TIMEOUT_SECONDS)
             logger.debug(f"Refresh response status: {response.status_code}")
 
             if response.status_code == 200:
