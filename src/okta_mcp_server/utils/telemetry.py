@@ -11,7 +11,8 @@ The server previously emitted only loguru JSON logs to Loki, so diagnosing a
 failure meant grepping log lines and there was no error-rate signal to alert on.
 This module adds OTLP traces and metrics:
 
-* One span per MCP tool call (``mcp.tool/<name>``) with duration and status.
+* One span per MCP tool call (``mcp.tool/<name>``) with duration, status and
+  the caller's Okta user ID as ``enduser.id`` (kept off metrics for cardinality).
 * A counter (``mcp.tool.calls``) and error counter (``mcp.tool.errors``), plus a
   duration histogram (``mcp.tool.duration``), labelled by tool name and status.
 * Best-effort spans for outbound Okta HTTP calls (the Okta SDK uses aiohttp).
@@ -213,6 +214,8 @@ def build_tool_middleware():
     from opentelemetry import metrics, trace
     from opentelemetry.trace import Status, StatusCode
 
+    from okta_mcp_server.utils.caller import caller_identity
+
     tracer = trace.get_tracer("okta_mcp_server")
     meter = metrics.get_meter("okta_mcp_server")
     calls = meter.create_counter("mcp.tool.calls", unit="1", description="MCP tool invocations")
@@ -227,6 +230,9 @@ def build_tool_middleware():
             attrs = {"mcp.tool.name": name}
             start = time.perf_counter()
             with tracer.start_as_current_span(f"mcp.tool/{name}", attributes=attrs) as span:
+                caller = caller_identity()
+                if caller:
+                    span.set_attribute("enduser.id", caller)
                 status = "ok"
                 try:
                     result = await call_next(context)

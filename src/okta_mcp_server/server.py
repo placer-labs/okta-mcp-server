@@ -258,11 +258,19 @@ def main():
     # OpenTelemetry traces + metrics. No-op unless OTEL_EXPORTER_OTLP_ENDPOINT is
     # set, so local/stdio runs are unaffected; the deployment points it at the
     # cluster OTLP collector to activate per-tool spans and error-rate metrics.
+    from okta_mcp_server.utils.caller import CallerContextMiddleware, build_rate_limit_middleware
     from okta_mcp_server.utils.telemetry import build_tool_middleware, configure_telemetry
+
+    mcp.add_middleware(CallerContextMiddleware())
 
     if configure_telemetry():
         mcp.add_middleware(build_tool_middleware())
         logger.info("OpenTelemetry tool-call middleware registered")
+
+    # Innermost of the three, so throttled tool calls still get a span and caller-tagged logs.
+    rate_limiter = build_rate_limit_middleware()
+    if rate_limiter is not None:
+        mcp.add_middleware(rate_limiter)
 
     from okta_mcp_server.tools.api_tokens import api_tokens  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.applications import (
