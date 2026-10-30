@@ -24,7 +24,11 @@ from okta_mcp_server.utils.pagination import (
     paginate_all_results,
 )
 from okta_mcp_server.utils.serialization import describe_exception, none_body_error
-from okta_mcp_server.utils.summarize import summarize_application, summarize_applications
+from okta_mcp_server.utils.summarize import (
+    summarize_application,
+    summarize_application_detail,
+    summarize_applications,
+)
 from okta_mcp_server.utils.validation import validate_ids
 
 _SIGN_ON_MODE_MODEL_MAP: Dict[str, Any] = {
@@ -152,7 +156,9 @@ async def get_application(ctx: Context, app_id: str, expand: Optional[str] = Non
         app group object
 
     Returns:
-        Dictionary containing the application details or error information.
+        Dictionary containing the application details, plus security-relevant settings and credentials
+        metadata (visibility, OIDC redirect URIs / grant types / client auth method, SAML sign-on and
+        signing config, admin notes). Client secrets and settings.app values are never returned.
     """
     logger.info(f"Getting application with ID: {app_id}")
 
@@ -179,7 +185,7 @@ async def get_application(ctx: Context, app_id: str, expand: Optional[str] = Non
             )
 
         logger.info(f"Successfully retrieved application: {app_id}")
-        return summarize_application(app)
+        return summarize_application_detail(app)
     except ToolError:
         raise
     except Exception as e:

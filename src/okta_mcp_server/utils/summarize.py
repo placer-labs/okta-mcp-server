@@ -16,6 +16,7 @@ reducing token usage.
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List
 
 
@@ -47,6 +48,34 @@ def _pick(source: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
     return {k: source[k] for k in keys if k in source}
 
 
+def _snake(key: str) -> str:
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", key).lower()
+
+
+def _sub(source: Any, key: str) -> Dict[str, Any]:
+    """Return the nested object at *key* (camelCase or snake_case) as a dict, or {}."""
+    if not isinstance(source, dict):
+        return {}
+    value = source.get(key)
+    if value is None:
+        value = source.get(_snake(key))
+    if value is None:
+        return {}
+    return _obj_to_dict(value)
+
+
+def _pick_either(source: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
+    """Like ``_pick`` but also matches the snake_case form; output is keyed by *keys*."""
+    out: Dict[str, Any] = {}
+    for k in keys:
+        v = source.get(k)
+        if v is None:
+            v = source.get(_snake(k))
+        if v is not None:
+            out[k] = v
+    return out
+
+
 # ── Applications ──────────────────────────────────────────────────────────
 
 _APP_FIELDS = [
@@ -71,6 +100,82 @@ def summarize_application(app: Any) -> Dict[str, Any]:
 def summarize_applications(apps: List[Any]) -> List[Dict[str, Any]]:
     """Summarize a list of Application objects."""
     return [summarize_application(a) for a in apps]
+
+
+# Allowlists only: settings.app and credential secrets must never be surfaced.
+_APP_VISIBILITY_FIELDS = ["autoLaunch", "autoSubmitToolbar", "hide"]
+_APP_OAUTH_SETTINGS_FIELDS = [
+    "redirect_uris",
+    "post_logout_redirect_uris",
+    "grant_types",
+    "response_types",
+    "application_type",
+    "consent_method",
+    "issuer_mode",
+    "wildcard_redirect",
+    "pkce_required",
+    "initiate_login_uri",
+    "idp_initiated_login",
+]
+_APP_OAUTH_CREDENTIAL_FIELDS = ["client_id", "token_endpoint_auth_method", "pkce_required", "autoKeyRotation"]
+_APP_SIGNING_FIELDS = ["kid", "rotationMode"]
+_APP_SAML_SIGN_ON_FIELDS = [
+    "ssoAcsUrl",
+    "audience",
+    "recipient",
+    "destination",
+    "assertionSigned",
+    "responseSigned",
+    "signatureAlgorithm",
+    "digestAlgorithm",
+    "honorForceAuthn",
+    "authnContextClassRef",
+    "subjectNameIdFormat",
+    "idpIssuer",
+    "requestCompressed",
+    "allowMultipleAcsEndpoints",
+]
+
+
+def _compact(d: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: v for k, v in d.items() if v not in (None, {})}
+
+
+def summarize_application_detail(app: Any) -> Dict[str, Any]:
+    """Return the compact summary plus allowlisted security-relevant settings and credentials."""
+    d = _obj_to_dict(app)
+    result = _pick(d, _APP_FIELDS)
+
+    visibility = _pick_either(_sub(d, "visibility"), _APP_VISIBILITY_FIELDS)
+    if visibility:
+        result["visibility"] = visibility
+
+    settings = _sub(d, "settings")
+    sign_on = _pick_either(_sub(settings, "signOn"), _APP_SAML_SIGN_ON_FIELDS)
+    slo_enabled = _sub(_sub(settings, "signOn"), "slo").get("enabled")
+    if slo_enabled is not None:
+        sign_on["slo"] = {"enabled": slo_enabled}
+    admin_note = _sub(settings, "notes").get("admin")
+    settings_out = _compact(
+        {
+            "oauthClient": _pick_either(_sub(settings, "oauthClient"), _APP_OAUTH_SETTINGS_FIELDS),
+            "signOn": sign_on,
+            "notes": {"admin": admin_note} if admin_note is not None else None,
+        }
+    )
+    if settings_out:
+        result["settings"] = settings_out
+
+    credentials = _sub(d, "credentials")
+    credentials_out = _compact(
+        {
+            "oauthClient": _pick_either(_sub(credentials, "oauthClient"), _APP_OAUTH_CREDENTIAL_FIELDS),
+            "signing": _pick_either(_sub(credentials, "signing"), _APP_SIGNING_FIELDS),
+        }
+    )
+    if credentials_out:
+        result["credentials"] = credentials_out
+    return result
 
 
 # ── Groups ────────────────────────────────────────────────────────────────
