@@ -229,7 +229,9 @@ def build_tool_middleware():
             name = getattr(context.message, "name", "unknown")
             attrs = {"mcp.tool.name": name}
             start = time.perf_counter()
-            with tracer.start_as_current_span(f"mcp.tool/{name}", attributes=attrs) as span:
+            with tracer.start_as_current_span(
+                f"mcp.tool/{name}", attributes=attrs, record_exception=False, set_status_on_exception=False
+            ) as span:
                 caller = caller_identity()
                 if caller:
                     span.set_attribute("enduser.id", caller)
@@ -238,8 +240,8 @@ def build_tool_middleware():
                     result = await call_next(context)
                 except Exception as exc:
                     status = "exception"
-                    span.record_exception(exc)
-                    span.set_status(Status(StatusCode.ERROR, str(exc)))
+                    span.set_attribute("exception.type", type(exc).__name__)
+                    span.set_status(Status(StatusCode.ERROR, type(exc).__name__))
                     span.set_attribute("mcp.tool.status", status)
                     errors.add(1, {**attrs, "mcp.tool.status": status})
                     raise

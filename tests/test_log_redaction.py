@@ -14,7 +14,8 @@ from fastmcp.exceptions import ToolError
 from loguru import logger
 
 from okta_mcp_server.tools.applications.applications import create_application
-from okta_mcp_server.tools.users.users import create_user, list_users
+from okta_mcp_server.tools.groups.groups import add_user_to_group
+from okta_mcp_server.tools.users.users import create_user, get_user, list_user_groups, list_users
 
 EMAIL = "jane.doe@example.com"
 
@@ -58,6 +59,42 @@ async def test_list_users_keeps_search_values_out_of_logs(mock_get_client, ctx_n
     assert log_lines
     assert EMAIL not in joined
     assert "Jane" not in joined
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("err", [None, f"Okta HTTP 404 E0000007 Not found: Resource not found: {EMAIL} (User)"])
+@patch("okta_mcp_server.tools.users.users.get_okta_client")
+async def test_user_lookups_by_login_keep_it_out_of_logs(mock_get_client, err, ctx_no_elicitation, log_lines):
+    client = AsyncMock()
+    client.get_user.return_value = (None if err else MagicMock(), MagicMock(), err)
+    client.list_user_groups.return_value = ([], MagicMock(), err)
+    mock_get_client.return_value = client
+
+    for tool in (get_user, list_user_groups):
+        try:
+            await tool(user_id=EMAIL, ctx=ctx_no_elicitation)
+        except ToolError:
+            pass
+
+    joined = "\n".join(log_lines)
+    assert log_lines
+    assert EMAIL not in joined
+    assert "login:" in joined
+
+
+@pytest.mark.asyncio
+@patch("okta_mcp_server.tools.groups.groups.get_okta_client")
+async def test_add_user_to_group_by_login_keeps_it_out_of_logs(mock_get_client, ctx_no_elicitation, log_lines):
+    client = AsyncMock()
+    client.list_user_groups.return_value = ([], MagicMock(), None)
+    client.assign_user_to_group.return_value = (None, MagicMock(), f"E0000001: Api validation failed: {EMAIL}")
+    mock_get_client.return_value = client
+
+    with pytest.raises(ToolError):
+        await add_user_to_group(group_id="00g1abcdEFGHijklMN2o", user_id=EMAIL, ctx=ctx_no_elicitation)
+
+    assert log_lines
+    assert EMAIL not in "\n".join(log_lines)
 
 
 SECRET = "s3cr3t-client-secret-value"

@@ -19,6 +19,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from fastmcp.exceptions import ToolError
 
 from okta_mcp_server.utils import telemetry
 
@@ -171,4 +172,32 @@ async def test_middleware_records_caller_identity_not_token(monkeypatch):
     assert attrs["enduser.id"] == "00u1abcdEFGHijklMN2o"
     emitted = {str(v) for v in attrs.values()}
     assert "raw-access-token" not in emitted
+    assert not any("jane@example.com" in v for v in emitted)
+
+
+@pytest.mark.asyncio
+async def test_middleware_keeps_exception_messages_out_of_spans(monkeypatch):
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    monkeypatch.setattr(trace, "get_tracer", provider.get_tracer)
+
+    mw = telemetry.build_tool_middleware()
+
+    async def call_next(_ctx):  # ruff: ignore[unused-async] - middleware awaits this callable
+        raise ToolError("Okta API error: Resource not found: jane@example.com (User)")
+
+    with pytest.raises(ToolError):
+        await mw.on_call_tool(_FakeContext(_FakeMessage("get_user")), call_next)
+
+    (span,) = exporter.get_finished_spans()
+    emitted = [str(v) for v in (span.attributes or {}).values()]
+    emitted += [str(v) for event in span.events for v in (event.attributes or {}).values()]
+    emitted.append(span.status.description or "")
+    assert span.attributes["exception.type"] == "ToolError"
     assert not any("jane@example.com" in v for v in emitted)

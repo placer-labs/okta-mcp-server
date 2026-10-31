@@ -55,6 +55,20 @@ def caller_identity() -> str | None:
     return None
 
 
+def loggable_user_id(user_id: str | None) -> str | None:
+    """Return ``user_id`` if it is an Okta user ID, else a hash, so logins never reach the logs."""
+    if user_id is None or _OKTA_USER_ID.fullmatch(user_id):
+        return user_id
+    return "login:" + hashlib.sha256(user_id.encode()).hexdigest()[:16]
+
+
+def scrub_user_id(text: object, user_id: str | None) -> str:
+    """Return ``text`` with a login-style ``user_id`` replaced by :func:`loggable_user_id`."""
+    text = str(text)
+    safe = loggable_user_id(user_id)
+    return text if not user_id or safe == user_id else text.replace(user_id, safe)
+
+
 def rate_limit_key(_context: MiddlewareContext | None = None) -> str:
     """Rate-limit bucket key: the caller, else the OAuth client, else one shared local bucket.
 
