@@ -5,6 +5,7 @@
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+import asyncio
 from typing import Any, Dict, Optional
 
 import okta.models as okta_models
@@ -30,6 +31,8 @@ from okta_mcp_server.utils.summarize import (
     summarize_policy_rules,
 )
 from okta_mcp_server.utils.validation import validate_ids
+
+_APP_LOOKUP_CONCURRENCY = 5
 
 _POLICY_RULE_MODEL_MAP: Dict[str, Any] = {
     "SIGN_ON": okta_models.OktaSignOnPolicyRule,
@@ -98,7 +101,10 @@ async def list_policies(
 
     try:
         okta_client = await get_okta_client(manager)
-        params = build_query_params(type=type, status=status, q=q, after=after, limit=100 if fetch_all else limit)
+        params = build_query_params(type=type, status=status, q=q, after=after)
+        page_size = 100 if fetch_all else limit
+        if page_size:
+            params["limit"] = str(page_size)
 
         logger.debug("Calling Okta API to list policies")
         policies, response, err = await okta_client.list_policies(**params)
@@ -172,6 +178,70 @@ async def get_policy(ctx: Context, policy_id: str):
         raise
     except Exception as e:
         logger.error(f"Exception getting policy: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
+
+
+@mcp.tool()
+@validate_ids("policy_id", error_return_type="dict")
+async def list_policy_apps(ctx: Context, policy_id: str):
+    """List the applications an app sign-in (ACCESS_POLICY) policy is applied to.
+
+    Use this to see which apps would accept the factors a policy allows, e.g. which apps use a
+    "Password only" or "One factor access" policy.
+
+    Parameters:
+        policy_id (str, required): The ID of the policy, as returned by list_policies(type="ACCESS_POLICY").
+
+    Returns:
+        Dict containing:
+        - items: List of {id, label, status, signOnMode}. Only id is set when the app can't be read
+            (okta.apps.read not granted).
+        - total_fetched: Number of applications returned.
+    """
+    logger.info(f"Listing applications mapped to policy {policy_id}")
+    manager = _resolve_manager(ctx)
+    action = f"listing applications for policy {policy_id}"
+
+    try:
+        okta_client = await get_okta_client(manager)
+        mappings, _, err = await okta_client.list_policy_mappings(policy_id)
+
+        if err:
+            logger.error(f"Error {action}: {err}")
+            raise ToolError(f"Okta API error: {err}")
+
+        app_ids = []
+        for mapping in mappings or []:
+            href = getattr(getattr(getattr(mapping, "links", None), "application", None), "href", None)
+            if href:
+                app_ids.append(href.rstrip("/").rsplit("/", 1)[-1])
+
+        semaphore = asyncio.Semaphore(_APP_LOOKUP_CONCURRENCY)
+
+        async def _describe(app_id: str) -> Dict[str, Any]:
+            entry: Dict[str, Any] = {"id": app_id}
+            try:
+                async with semaphore:
+                    app, _, app_err = await okta_client.get_application(app_id)
+            except Exception:
+                return entry
+            if app_err or app is None:
+                return entry
+            app_dict = _obj_to_dict(getattr(app, "actual_instance", None) or app)
+            for key in ("label", "status", "signOnMode"):
+                if app_dict.get(key) is not None:
+                    entry[key] = app_dict[key]
+            return entry
+
+        items = list(await asyncio.gather(*(_describe(app_id) for app_id in app_ids)))
+
+        logger.info(f"Policy {policy_id} is applied to {len(items)} application(s)")
+        return {"items": items, "total_fetched": len(items)}
+
+    except ToolError:
+        raise
+    except Exception as e:
+        logger.error(f"Exception {action}: {describe_exception(e)}")
         raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 

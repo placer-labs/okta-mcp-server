@@ -69,5 +69,5 @@ async def test_list_policies_forwards_q_and_limit(mock_get_client):
 
     result = await list_policies(_CTX, type="PASSWORD", q="default", limit=50)
 
-    client.list_policies.assert_awaited_once_with(type="PASSWORD", q="default", limit=50)
+    client.list_policies.assert_awaited_once_with(type="PASSWORD", q="default", limit="50")
     assert result["items"] == []

@@ -16,12 +16,17 @@ from okta.models.device_assurance import DeviceAssurance
 from okta.models.group import Group
 from okta.models.group_push_mapping import GroupPushMapping
 from okta.models.group_rule import GroupRule
+from okta.models.iam_roles import IamRoles
 from okta.models.list_group_assigned_roles200_response_inner import ListGroupAssignedRoles200ResponseInner
 from okta.models.list_roles_for_client200_response_inner import ListRolesForClient200ResponseInner
 from okta.models.log_event import LogEvent
+from okta.models.network_zone import NetworkZone
+from okta.models.permissions import Permissions
 from okta.models.policy import Policy
+from okta.models.policy_mapping import PolicyMapping
 from okta.models.role_assigned_users import RoleAssignedUsers
 from okta.models.user import User
+from okta.models.user_factor import UserFactor
 
 OktaError = Any  # SDK uses custom error objects
 
@@ -167,6 +172,23 @@ class Client:
     async def list_roles_for_client(
         self, client_id: str, **kwargs: Any
     ) -> tuple[list[ListRolesForClient200ResponseInner] | None, ApiResponse | None, OktaError]: ...
+    async def list_roles(
+        self, after: str | None = ..., **kwargs: Any
+    ) -> tuple[IamRoles | None, ApiResponse | None, OktaError]: ...
+    async def list_role_permissions(
+        self, role_id_or_label: str, **kwargs: Any
+    ) -> tuple[Permissions | None, ApiResponse | None, OktaError]: ...
+
+    # ── Policy mappings / network zones / user factors ─────────────────────
+    async def list_policy_mappings(
+        self, policy_id: str, **kwargs: Any
+    ) -> tuple[list[PolicyMapping] | None, ApiResponse | None, OktaError]: ...
+    async def list_network_zones(
+        self, **kwargs: Any
+    ) -> tuple[list[NetworkZone] | None, ApiResponse | None, OktaError]: ...
+    async def list_factors(
+        self, user_id: str, **kwargs: Any
+    ) -> tuple[list[UserFactor] | None, ApiResponse | None, OktaError]: ...
 
     # ── System Logs ────────────────────────────────────────────────────────
     async def list_log_events(self, **kwargs: Any) -> tuple[list[LogEvent] | None, ApiResponse | None, OktaError]: ...

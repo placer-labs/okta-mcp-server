@@ -21,7 +21,7 @@ from okta_mcp_server.utils.pagination import (
     paginate_all_results,
 )
 from okta_mcp_server.utils.serialization import describe_exception, none_body_error
-from okta_mcp_server.utils.summarize import summarize_groups, summarize_user, summarize_users
+from okta_mcp_server.utils.summarize import summarize_groups, summarize_user, summarize_user_factors, summarize_users
 from okta_mcp_server.utils.validation import validate_ids
 
 
@@ -219,6 +219,50 @@ async def list_user_groups(
     except Exception as e:
         logger.error(
             f"Exception while listing groups for user {loggable_user_id(user_id)}: {type(e).__name__}: {scrub_user_id(describe_exception(e), user_id)}"
+        )
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
+
+
+@mcp.tool()
+@validate_ids("user_id")
+async def list_user_factors(
+    user_id: str,
+    ctx: Context | None = None,
+):
+    """List the authentication factors a user has enrolled (Okta Verify, TOTP, security question, SMS, WebAuthn...).
+
+    Use this to check whether a user relies on weak factors or lacks a phishing-resistant one.
+
+    Parameters:
+        user_id (str, required): The ID of the user.
+
+    Returns:
+        Dict containing:
+        - items: List of {id, factorType, provider, vendorName, status, created, lastUpdated}.
+            Factor profiles (phone numbers, emails, device details) are not returned.
+        - total_fetched: Number of factors returned.
+    """
+    logger.info(f"Listing factors for user: {loggable_user_id(user_id)}")
+    manager = _resolve_manager(ctx)
+
+    try:
+        client = await get_okta_client(manager)
+        factors, _, err = await client.list_factors(user_id)
+
+        if err:
+            logger.error(
+                f"Okta API error while listing factors for user {loggable_user_id(user_id)}: {scrub_user_id(err, user_id)}"
+            )
+            raise ToolError(f"Okta API error: {err}")
+
+        items = summarize_user_factors(list(factors or []))
+        logger.info(f"Retrieved {len(items)} factor(s) for user {loggable_user_id(user_id)}")
+        return {"items": items, "total_fetched": len(items)}
+    except ToolError:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Exception while listing factors for user {loggable_user_id(user_id)}: {type(e).__name__}: {scrub_user_id(describe_exception(e), user_id)}"
         )
         raise ToolError(f"Exception: {describe_exception(e)}") from e
 

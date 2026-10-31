@@ -26,6 +26,7 @@ TOOL_SCOPE_REGISTRY: dict[str, str] = {
     "get_user": "okta.users.read",
     "get_user_profile_attributes": "okta.users.read",
     "list_user_groups": "okta.users.read",
+    "list_user_factors": "okta.users.read",
     "create_user": "okta.users.manage",
     "update_user": "okta.users.manage",
     "deactivate_user": "okta.users.manage",
@@ -62,6 +63,7 @@ TOOL_SCOPE_REGISTRY: dict[str, str] = {
     "get_policy": "okta.policies.read",
     "list_policy_rules": "okta.policies.read",
     "get_policy_rule": "okta.policies.read",
+    "list_policy_apps": "okta.policies.read",
     "create_policy": "okta.policies.manage",
     "update_policy": "okta.policies.manage",
     "delete_policy": "okta.policies.manage",
@@ -86,6 +88,9 @@ TOOL_SCOPE_REGISTRY: dict[str, str] = {
     # Admin roles
     "list_admin_role_assignments": "okta.roles.read",
     "list_app_admin_roles": "okta.roles.read",
+    "list_custom_roles": "okta.roles.read",
+    # Network zones
+    "list_network_zones": "okta.networkZones.read",
     # System logs
     "get_logs": "okta.logs.read",
     "get_login_failures": "okta.logs.read",

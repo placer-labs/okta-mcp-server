@@ -516,6 +516,10 @@ The Okta MCP Server provides the following tools for LLMs to interact with your 
 | `list_authenticators`         | `okta.authenticators.read` | List authenticators with status and non-secret settings            | - `Which authenticators are active?` <br> - `Is email allowed for authentication or only recovery?` |
 | `list_admin_role_assignments` | `okta.roles.read`          | List users holding admin roles and the roles assigned to each      | - `Who are our Super Admins?` <br> - `Which admin roles come from group assignment?`                |
 | `list_app_admin_roles`        | `okta.roles.read`          | List admin roles assigned to a service app by OAuth `client_id`    | - `What admin roles does our Terraform service app hold?`                                           |
+| `list_custom_roles`           | `okta.roles.read`          | List custom admin roles and the permissions each grants            | - `What can the custom role assigned to our automation user do?`                                    |
+| `list_network_zones`          | `okta.networkZones.read`   | List network zones with their IP ranges, locations and ASNs        | - `Which IPs does the zone in our VPN sign-on rule allow?`                                          |
+| `list_policy_apps`            | `okta.policies.read`       | List the apps an app sign-in policy is applied to                  | - `Which apps use the Password only policy?`                                                        |
+| `list_user_factors`           | `okta.users.read`          | List a user's enrolled factors (type and status, no profile)       | - `Does this admin have a security key enrolled?`                                                   |
 
 Set `OKTA_MCP_READ_ONLY=true` to disable every tool that needs a `.manage` scope, and any tool without a scope mapping, regardless of `OKTA_SCOPES`. Direct calls to write tools are rejected as well.
 
