@@ -287,6 +287,7 @@ def main():
     from okta_mcp_server.tools.device_assurance import device_assurance  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.group_rules import group_rules  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.groups import groups  # ruff: ignore[unused-import]
+    from okta_mcp_server.tools.network_zones import network_zones  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.policies import policies  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.roles import roles  # ruff: ignore[unused-import]
     from okta_mcp_server.tools.system_logs import (

@@ -524,3 +524,61 @@ def summarize_role(role: Any) -> Dict[str, Any]:
 
 def summarize_roles(roles: List[Any]) -> List[Dict[str, Any]]:
     return [summarize_role(r) for r in roles]
+
+
+# ── Network zones ─────────────────────────────────────────────
+
+_NETWORK_ZONE_FIELDS = [
+    "id",
+    "name",
+    "type",
+    "status",
+    "usage",
+    "system",
+    "created",
+    "lastUpdated",
+    "gateways",
+    "proxies",
+    "proxyType",
+    "locations",
+    "asns",
+    "ipServiceCategories",
+]
+
+
+def summarize_network_zone(zone: Any) -> Dict[str, Any]:
+    """Return a zone's definition (IP ranges, locations, ASNs), unwrapping the SDK's per-type subclass."""
+    inner: Optional[Any] = getattr(zone, "actual_instance", None)
+    return _pick_either(_obj_to_dict(inner if inner is not None else zone), _NETWORK_ZONE_FIELDS)
+
+
+def summarize_network_zones(zones: List[Any]) -> List[Dict[str, Any]]:
+    return [summarize_network_zone(z) for z in zones]
+
+
+# ── User factors ──────────────────────────────────────────────
+
+_USER_FACTOR_FIELDS = ["id", "factorType", "provider", "vendorName", "status", "created", "lastUpdated"]
+
+
+def summarize_user_factor(factor: Any) -> Dict[str, Any]:
+    """Return a factor enrollment's type and status; the profile (phone number, email, device details) is omitted."""
+    inner: Optional[Any] = getattr(factor, "actual_instance", None)
+    return _pick_either(_obj_to_dict(inner if inner is not None else factor), _USER_FACTOR_FIELDS)
+
+
+def summarize_user_factors(factors: List[Any]) -> List[Dict[str, Any]]:
+    return [summarize_user_factor(f) for f in factors]
+
+
+# ── Custom admin roles ────────────────────────────────────────
+
+_CUSTOM_ROLE_FIELDS = ["id", "label", "description", "created", "lastUpdated"]
+_PERMISSION_FIELDS = ["label", "conditions"]
+
+
+def summarize_custom_role(role: Any, permissions: Optional[List[Any]] = None) -> Dict[str, Any]:
+    out = _pick_either(_obj_to_dict(role), _CUSTOM_ROLE_FIELDS)
+    if permissions is not None:
+        out["permissions"] = [_pick_either(_obj_to_dict(p), _PERMISSION_FIELDS) for p in permissions]
+    return out

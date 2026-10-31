@@ -17,7 +17,7 @@ from okta_mcp_server.server import mcp
 from okta_mcp_server.utils.client import _resolve_manager, get_okta_client
 from okta_mcp_server.utils.pagination import extract_after_cursor
 from okta_mcp_server.utils.serialization import describe_exception, none_body_error, okta_tool_error
-from okta_mcp_server.utils.summarize import summarize_roles
+from okta_mcp_server.utils.summarize import summarize_custom_role, summarize_roles
 from okta_mcp_server.utils.validation import validate_ids
 
 _SCOPE = "okta.roles.read"
@@ -173,4 +173,63 @@ async def list_app_admin_roles(ctx: Context, client_id: str):
         raise
     except Exception as e:
         logger.error(f"Exception while {action}: {type(e).__name__}: {describe_exception(e)}")
+        raise ToolError(f"Exception: {describe_exception(e)}") from e
+
+
+@mcp.tool()
+async def list_custom_roles(ctx: Context):
+    """List the custom admin roles defined in the Okta organization, with the permissions each grants.
+
+    Use this to see what a custom role named in list_admin_role_assignments can actually do
+    (e.g. okta.users.manage, okta.apps.read), including any permission conditions.
+
+    Returns:
+        Dict containing:
+        - items: List of {id, label, description, created, lastUpdated, permissions: [{label, conditions}]}.
+            A per-role error field is set when that role's permissions could not be read.
+        - total_fetched: Number of roles returned.
+    """
+    logger.info("Listing custom admin roles")
+    manager = _resolve_manager(ctx)
+
+    try:
+        client = await get_okta_client(manager)
+
+        roles: List[Any] = []
+        after: Optional[str] = None
+        while True:
+            params: Dict[str, Any] = {"after": after} if after else {}
+            page, response, err = await client.list_roles(**params)
+            if err:
+                logger.error(f"Okta API error while listing custom roles: {err}")
+                raise okta_tool_error(err, _SCOPE, "listing custom roles")
+            if page is None:
+                empty = none_body_error("list_custom_roles", "listing custom roles", "Call this tool again.")["error"]
+                raise okta_tool_error(response, _SCOPE, "listing custom roles", fallback=empty)
+            roles.extend(page.roles or [])
+            after = _next_cursor(page, response)
+            if not after:
+                break
+
+        semaphore = asyncio.Semaphore(_CONCURRENCY)
+
+        async def _one(role: Any) -> Dict[str, Any]:
+            role_id = str(getattr(role, "id", ""))
+            async with semaphore:
+                perms, _, perm_err = await client.list_role_permissions(role_id)
+            if perm_err:
+                if _is_auth_error(perm_err):
+                    raise okta_tool_error(perm_err, _SCOPE, f"listing permissions for role {role_id}")
+                entry = summarize_custom_role(role)
+                entry["error"] = f"Okta API error: {perm_err}"
+                return entry
+            return summarize_custom_role(role, list(getattr(perms, "permissions", None) or []))
+
+        items = list(await asyncio.gather(*(_one(r) for r in roles)))
+        logger.info(f"Retrieved {len(items)} custom role(s)")
+        return {"items": items, "total_fetched": len(items)}
+    except ToolError:
+        raise
+    except Exception as e:
+        logger.error(f"Exception while listing custom roles: {type(e).__name__}: {describe_exception(e)}")
         raise ToolError(f"Exception: {describe_exception(e)}") from e
