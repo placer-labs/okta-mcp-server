@@ -17,6 +17,7 @@ import hashlib
 import os
 import re
 from typing import Any
+from urllib.parse import quote
 
 from fastmcp.server.middleware import Middleware, MiddlewareContext
 from fastmcp.server.middleware.rate_limiting import RateLimitingMiddleware
@@ -53,6 +54,28 @@ def caller_identity() -> str | None:
         if isinstance(candidate, str) and _OKTA_USER_ID.fullmatch(candidate):
             return candidate
     return None
+
+
+def loggable_user_id(user_id: str | None) -> str | None:
+    """Return ``user_id`` if it is an Okta user ID, else a hash, so logins never reach the logs."""
+    if user_id is None or _OKTA_USER_ID.fullmatch(user_id):
+        return user_id
+    return _hashed_login(user_id)
+
+
+def _hashed_login(login: str) -> str:
+    return "login:" + hashlib.sha256(login.encode()).hexdigest()[:16]
+
+
+def scrub_user_id(text: object, user_id: str | None) -> str:
+    """Return ``text`` with a login-style ``user_id`` replaced by :func:`loggable_user_id`."""
+    text = str(text)
+    if not user_id or _OKTA_USER_ID.fullmatch(user_id):
+        return text
+    safe = _hashed_login(user_id)
+    forms = {user_id, quote(user_id, safe=""), quote(user_id)}
+    pattern = "|".join(re.escape(f) for f in sorted(forms, key=len, reverse=True))
+    return re.sub(pattern, safe, text, flags=re.IGNORECASE)
 
 
 def rate_limit_key(_context: MiddlewareContext | None = None) -> str:

@@ -22,6 +22,7 @@ from loguru import logger
 
 from okta_mcp_server.server import mcp
 from okta_mcp_server.tools.system_logs.system_logs import check_logs_scope_error
+from okta_mcp_server.utils.caller import loggable_user_id
 from okta_mcp_server.utils.client import _resolve_manager, get_okta_client
 from okta_mcp_server.utils.pagination import build_query_params, has_next_page, paginate_all_results
 from okta_mcp_server.utils.serialization import describe_exception
@@ -130,7 +131,7 @@ async def get_login_failures(
     since = since or (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
     until = until or now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-    logger.debug(f"Time window: {since} → {until}, user_id={user_id}, q set: {bool(q)}")
+    logger.debug(f"Time window: {since} → {until}, user_id={loggable_user_id(user_id)}, q set: {bool(q)}")
 
     manager = _resolve_manager(ctx)
 

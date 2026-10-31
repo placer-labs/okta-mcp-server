@@ -12,6 +12,7 @@ from fastmcp.exceptions import ToolError
 from loguru import logger
 
 from okta_mcp_server.server import mcp
+from okta_mcp_server.utils.caller import loggable_user_id, scrub_user_id
 from okta_mcp_server.utils.client import _resolve_manager, get_okta_client
 from okta_mcp_server.utils.pagination import (
     build_query_params,
@@ -508,7 +509,7 @@ async def add_user_to_group(group_id: str, user_id: str, ctx: Context | None = N
     Returns:
         List containing the result of the addition operation.
     """
-    logger.info(f"Adding user {user_id} to group {group_id}")
+    logger.info(f"Adding user {loggable_user_id(user_id)} to group {group_id}")
 
     manager = _resolve_manager(ctx)
 
@@ -520,21 +521,23 @@ async def add_user_to_group(group_id: str, user_id: str, ctx: Context | None = N
         # us whether the user was actually added. Querying from the user side is
         # cheap (users typically belong to O(10-50) groups vs groups having
         # potentially thousands of members).
-        logger.debug(f"Checking if user {user_id} is already a member of group {group_id}")
+        logger.debug(f"Checking if user {loggable_user_id(user_id)} is already a member of group {group_id}")
         user_groups, _, groups_err = await client.list_user_groups(user_id)
         if not groups_err and user_groups:
             if any(getattr(g, "id", None) == group_id for g in user_groups):
-                logger.info(f"User {user_id} is already a member of group {group_id}")
+                logger.info(f"User {loggable_user_id(user_id)} is already a member of group {group_id}")
                 return [{"message": f"User {user_id} is already a member of group {group_id}. No changes made."}]
 
-        logger.debug(f"Calling Okta API to add user {user_id} to group {group_id}")
+        logger.debug(f"Calling Okta API to add user {loggable_user_id(user_id)} to group {group_id}")
         _, _, err = await client.assign_user_to_group(group_id, user_id)
 
         if err:
-            logger.error(f"Okta API error while adding user {user_id} to group {group_id}: {err}")
+            logger.error(
+                f"Okta API error while adding user {loggable_user_id(user_id)} to group {group_id}: {scrub_user_id(err, user_id)}"
+            )
             raise ToolError(f"Okta API error: {err}")
 
-        logger.info(f"Successfully added user {user_id} to group {group_id}")
+        logger.info(f"Successfully added user {loggable_user_id(user_id)} to group {group_id}")
         return [{"message": "User added to group successfully"}]
     except ToolError:
         raise
@@ -559,21 +562,23 @@ async def remove_user_from_group(group_id: str, user_id: str, ctx: Context | Non
     Returns:
         List containing the result of the removal operation.
     """
-    logger.info(f"Removing user {user_id} from group {group_id}")
+    logger.info(f"Removing user {loggable_user_id(user_id)} from group {group_id}")
 
     manager = _resolve_manager(ctx)
 
     try:
         client = await get_okta_client(manager)
-        logger.debug(f"Calling Okta API to remove user {user_id} from group {group_id}")
+        logger.debug(f"Calling Okta API to remove user {loggable_user_id(user_id)} from group {group_id}")
 
         _, _, err = await client.unassign_user_from_group(group_id, user_id)
 
         if err:
-            logger.error(f"Okta API error while removing user {user_id} from group {group_id}: {err}")
+            logger.error(
+                f"Okta API error while removing user {loggable_user_id(user_id)} from group {group_id}: {scrub_user_id(err, user_id)}"
+            )
             raise ToolError(f"Okta API error: {err}")
 
-        logger.info(f"Successfully removed user {user_id} from group {group_id}")
+        logger.info(f"Successfully removed user {loggable_user_id(user_id)} from group {group_id}")
         return [{"message": "User removed from group successfully"}]
     except ToolError:
         raise

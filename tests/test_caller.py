@@ -61,6 +61,22 @@ def test_email_subject_is_never_emitted(as_user):
     assert "example.com" not in key
 
 
+def test_loggable_user_id_hashes_logins():
+    assert caller.loggable_user_id(JANE) == JANE
+    assert caller.loggable_user_id(None) is None
+    hashed = caller.loggable_user_id("jane@example.com")
+    assert hashed is not None
+    assert hashed.startswith("login:") and "jane" not in hashed
+    assert hashed == caller.loggable_user_id("jane@example.com")
+    assert (
+        caller.scrub_user_id("not found: jane@example.com (User)", "jane@example.com") == f"not found: {hashed} (User)"
+    )
+    assert caller.scrub_user_id("not found: x", JANE) == "not found: x"
+    assert caller.scrub_user_id("users/Jane%40Example.com and JANE@EXAMPLE.COM", "jane@example.com") == (
+        f"users/{hashed} and {hashed}"
+    )
+
+
 def test_rate_limit_on_by_default_and_explicit_off():
     default = caller.build_rate_limit_middleware({})
     assert default is not None

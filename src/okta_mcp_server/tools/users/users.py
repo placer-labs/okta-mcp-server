@@ -12,6 +12,7 @@ from fastmcp.exceptions import ToolError
 from loguru import logger
 
 from okta_mcp_server.server import mcp
+from okta_mcp_server.utils.caller import loggable_user_id, scrub_user_id
 from okta_mcp_server.utils.client import _resolve_manager, get_okta_client
 from okta_mcp_server.utils.pagination import (
     build_query_params,
@@ -140,7 +141,7 @@ async def get_user_profile_attributes(user_id: Optional[str] = None, ctx: Contex
     Returns:
         A dict of user profile attributes.
     """
-    logger.info(f"Fetching user profile attributes (user_id={user_id or 'sampled'})")
+    logger.info(f"Fetching user profile attributes (user_id={loggable_user_id(user_id) or 'sampled'})")
 
     manager = _resolve_manager(ctx)
 
@@ -164,7 +165,9 @@ async def get_user_profile_attributes(user_id: Optional[str] = None, ctx: Contex
             logger.debug(f"Profile attributes: {list(attributes.keys())}")
             return attributes
 
-        logger.warning(f"No user found to read profile attributes from (user_id={user_id or 'sampled'})")
+        logger.warning(
+            f"No user found to read profile attributes from (user_id={loggable_user_id(user_id) or 'sampled'})"
+        )
         return []
     except ToolError:
         raise
@@ -189,30 +192,34 @@ async def list_user_groups(
     Returns:
         List containing the groups the user belongs to.
     """
-    logger.info(f"Listing groups for user: {user_id}")
+    logger.info(f"Listing groups for user: {loggable_user_id(user_id)}")
 
     manager = _resolve_manager(ctx)
 
     try:
         client = await get_okta_client(manager)
-        logger.debug(f"Calling Okta API to list groups for user {user_id}")
+        logger.debug(f"Calling Okta API to list groups for user {loggable_user_id(user_id)}")
 
         groups, _, err = await client.list_user_groups(user_id)
 
         if err:
-            logger.error(f"Okta API error while listing groups for user {user_id}: {err}")
+            logger.error(
+                f"Okta API error while listing groups for user {loggable_user_id(user_id)}: {scrub_user_id(err, user_id)}"
+            )
             raise ToolError(f"Okta API error: {err}")
 
         if not groups:
-            logger.info(f"No groups found for user {user_id}")
+            logger.info(f"No groups found for user {loggable_user_id(user_id)}")
             return []
 
-        logger.info(f"Successfully retrieved {len(groups)} groups for user {user_id}")
+        logger.info(f"Successfully retrieved {len(groups)} groups for user {loggable_user_id(user_id)}")
         return summarize_groups(groups)
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while listing groups for user {user_id}: {type(e).__name__}: {describe_exception(e)}")
+        logger.error(
+            f"Exception while listing groups for user {loggable_user_id(user_id)}: {type(e).__name__}: {scrub_user_id(describe_exception(e), user_id)}"
+        )
         raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
@@ -229,30 +236,34 @@ async def get_user(user_id: str, ctx: Context | None = None):
     Returns:
         List containing the user details.
     """
-    logger.info(f"Getting user with ID: {user_id}")
+    logger.info(f"Getting user with ID: {loggable_user_id(user_id)}")
 
     manager = _resolve_manager(ctx)
 
     try:
         client = await get_okta_client(manager)
-        logger.debug(f"Calling Okta API to get user {user_id}")
+        logger.debug(f"Calling Okta API to get user {loggable_user_id(user_id)}")
 
         user, _, err = await client.get_user(user_id)
 
         if err:
-            logger.error(f"Okta API error while getting user {user_id}: {err}")
+            logger.error(
+                f"Okta API error while getting user {loggable_user_id(user_id)}: {scrub_user_id(err, user_id)}"
+            )
             raise ToolError(f"Okta API error: {err}")
 
         if user is None:
-            logger.info(f"User not found: {user_id}")
+            logger.info(f"User not found: {loggable_user_id(user_id)}")
             return []
 
-        logger.info(f"Successfully retrieved user: {user_id}")
+        logger.info(f"Successfully retrieved user: {loggable_user_id(user_id)}")
         return [summarize_user(user)]
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while getting user {user_id}: {type(e).__name__}: {describe_exception(e)}")
+        logger.error(
+            f"Exception while getting user {loggable_user_id(user_id)}: {type(e).__name__}: {scrub_user_id(describe_exception(e), user_id)}"
+        )
         raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
@@ -323,19 +334,21 @@ async def update_user(user_id: str, profile: dict, ctx: Context | None = None):
     Returns:
         List containing the updated user details.
     """
-    logger.info(f"Updating user with ID: {user_id}")
+    logger.info(f"Updating user with ID: {loggable_user_id(user_id)}")
 
     manager = _resolve_manager(ctx)
 
     try:
         client = await get_okta_client(manager)
         user_data = {"profile": profile}
-        logger.debug(f"Calling Okta API to update user {user_id}")
+        logger.debug(f"Calling Okta API to update user {loggable_user_id(user_id)}")
 
         user, _, err = await client.update_user(user_id, user_data)
 
         if err:
-            logger.error(f"Okta API error while updating user {user_id}: {err}")
+            logger.error(
+                f"Okta API error while updating user {loggable_user_id(user_id)}: {scrub_user_id(err, user_id)}"
+            )
             raise ToolError(f"Okta API error: {err}")
 
         if user is None:
@@ -347,12 +360,14 @@ async def update_user(user_id: str, profile: dict, ctx: Context | None = None):
                 )["error"]
             )
 
-        logger.info(f"Successfully updated user: {user_id}")
+        logger.info(f"Successfully updated user: {loggable_user_id(user_id)}")
         return [summarize_user(user)]
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while updating user {user_id}: {type(e).__name__}: {describe_exception(e)}")
+        logger.error(
+            f"Exception while updating user {loggable_user_id(user_id)}: {type(e).__name__}: {scrub_user_id(describe_exception(e), user_id)}"
+        )
         raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
@@ -370,26 +385,30 @@ async def deactivate_user(user_id: str, ctx: Context | None = None):
     Returns:
         List containing the result of the deactivation operation.
     """
-    logger.info(f"Deactivating user with ID: {user_id}")
+    logger.info(f"Deactivating user with ID: {loggable_user_id(user_id)}")
 
     manager = _resolve_manager(ctx)
 
     try:
         client = await get_okta_client(manager)
-        logger.debug(f"Calling Okta API to deactivate user {user_id}")
+        logger.debug(f"Calling Okta API to deactivate user {loggable_user_id(user_id)}")
 
         _, _, err = await client.deactivate_user(user_id)
 
         if err:
-            logger.error(f"Okta API error while deactivating user {user_id}: {err}")
+            logger.error(
+                f"Okta API error while deactivating user {loggable_user_id(user_id)}: {scrub_user_id(err, user_id)}"
+            )
             raise ToolError(f"Okta API error: {err}")
 
-        logger.info(f"Successfully deactivated user: {user_id}")
+        logger.info(f"Successfully deactivated user: {loggable_user_id(user_id)}")
         return [f"User {user_id} deactivated successfully."]
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while deactivating user {user_id}: {type(e).__name__}: {describe_exception(e)}")
+        logger.error(
+            f"Exception while deactivating user {loggable_user_id(user_id)}: {type(e).__name__}: {scrub_user_id(describe_exception(e), user_id)}"
+        )
         raise ToolError(f"Exception: {describe_exception(e)}") from e
 
 
@@ -406,24 +425,28 @@ async def delete_deactivated_user(user_id: str, ctx: Context | None = None):
     Returns:
         List containing the result of the deletion operation.
     """
-    logger.info(f"Deleting deactivated user with ID: {user_id}")
+    logger.info(f"Deleting deactivated user with ID: {loggable_user_id(user_id)}")
 
     manager = _resolve_manager(ctx)
 
     try:
         client = await get_okta_client(manager)
-        logger.debug(f"Calling Okta API to delete user {user_id}")
+        logger.debug(f"Calling Okta API to delete user {loggable_user_id(user_id)}")
 
         _, _, err = await client.delete_user(user_id)
 
         if err:
-            logger.error(f"Okta API error while deleting user {user_id}: {err}")
+            logger.error(
+                f"Okta API error while deleting user {loggable_user_id(user_id)}: {scrub_user_id(err, user_id)}"
+            )
             raise ToolError(f"Okta API error: {err}")
 
-        logger.info(f"Successfully deleted user: {user_id}")
+        logger.info(f"Successfully deleted user: {loggable_user_id(user_id)}")
         return [f"User {user_id} deleted successfully."]
     except ToolError:
         raise
     except Exception as e:
-        logger.error(f"Exception while deleting user {user_id}: {type(e).__name__}: {describe_exception(e)}")
+        logger.error(
+            f"Exception while deleting user {loggable_user_id(user_id)}: {type(e).__name__}: {scrub_user_id(describe_exception(e), user_id)}"
+        )
         raise ToolError(f"Exception: {describe_exception(e)}") from e
