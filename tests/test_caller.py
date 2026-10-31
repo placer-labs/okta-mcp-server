@@ -71,6 +71,9 @@ def test_loggable_user_id_hashes_logins():
         caller.scrub_user_id("not found: jane@example.com (User)", "jane@example.com") == f"not found: {hashed} (User)"
     )
     assert caller.scrub_user_id("not found: x", JANE) == "not found: x"
+    assert caller.scrub_user_id("users/Jane%40Example.com and JANE@EXAMPLE.COM", "jane@example.com") == (
+        f"users/{hashed} and {hashed}"
+    )
 
 
 def test_rate_limit_on_by_default_and_explicit_off():

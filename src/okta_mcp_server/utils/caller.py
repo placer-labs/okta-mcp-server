@@ -17,6 +17,7 @@ import hashlib
 import os
 import re
 from typing import Any
+from urllib.parse import quote
 
 from fastmcp.server.middleware import Middleware, MiddlewareContext
 from fastmcp.server.middleware.rate_limiting import RateLimitingMiddleware
@@ -66,7 +67,11 @@ def scrub_user_id(text: object, user_id: str | None) -> str:
     """Return ``text`` with a login-style ``user_id`` replaced by :func:`loggable_user_id`."""
     text = str(text)
     safe = loggable_user_id(user_id)
-    return text if not user_id or safe == user_id else text.replace(user_id, safe)
+    if not user_id or safe == user_id:
+        return text
+    forms = {user_id, quote(user_id, safe=""), quote(user_id)}
+    pattern = "|".join(re.escape(f) for f in sorted(forms, key=len, reverse=True))
+    return re.sub(pattern, safe, text, flags=re.IGNORECASE)
 
 
 def rate_limit_key(_context: MiddlewareContext | None = None) -> str:
