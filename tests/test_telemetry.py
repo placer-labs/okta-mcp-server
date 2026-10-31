@@ -199,5 +199,5 @@ async def test_middleware_keeps_exception_messages_out_of_spans(monkeypatch):
     emitted = [str(v) for v in (span.attributes or {}).values()]
     emitted += [str(v) for event in span.events for v in (event.attributes or {}).values()]
     emitted.append(span.status.description or "")
-    assert span.attributes["exception.type"] == "ToolError"
+    assert (span.attributes or {}).get("exception.type") == "ToolError"
     assert not any("jane@example.com" in v for v in emitted)

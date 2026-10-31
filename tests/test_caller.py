@@ -65,6 +65,7 @@ def test_loggable_user_id_hashes_logins():
     assert caller.loggable_user_id(JANE) == JANE
     assert caller.loggable_user_id(None) is None
     hashed = caller.loggable_user_id("jane@example.com")
+    assert hashed is not None
     assert hashed.startswith("login:") and "jane" not in hashed
     assert hashed == caller.loggable_user_id("jane@example.com")
     assert (
