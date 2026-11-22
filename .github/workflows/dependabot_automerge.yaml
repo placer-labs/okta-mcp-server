@@ -1,0 +1,46 @@
+name: dependabot auto-merge
+
+# Merges open Dependabot PRs once every PR workflow on the head commit is green,
+# the bump is patch/minor, and each new release is at least MIN_AGE_DAYS old.
+# Runs on a schedule (not on pull_request) so it never races CI and also picks
+# up PRs whose releases age past the threshold later.
+on:
+  schedule:
+    - cron: "17 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only report what would be merged"
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: dependabot-automerge
+  cancel-in-progress: false
+
+jobs:
+  automerge:
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: write       # merge PRs
+      pull-requests: write  # approve PRs
+      actions: write        # dispatch the image build (GITHUB_TOKEN merges skip push workflows)
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Merge eligible Dependabot PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          MERGE_METHOD: squash
+          MIN_AGE_DAYS: "7"
+          POST_MERGE_WORKFLOW: on_push_to_placer_main.yaml
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: python3 .github/scripts/dependabot_automerge.py
