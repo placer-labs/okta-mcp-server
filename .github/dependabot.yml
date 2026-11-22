@@ -1,8 +1,7 @@
 version: 2
 updates:
-  # cooldown: only propose releases that have been public for a week. Keep in
-  # sync with MIN_AGE_DAYS in workflows/dependabot_automerge.yaml, which applies
-  # the same age floor to security updates (which ignore cooldown).
+  # cooldown: only propose releases that have been public for a week. Security
+  # updates ignore cooldown, so CVE fixes arrive (and auto-merge) immediately.
   - package-ecosystem: "uv"
     directory: "/"
     schedule:
@@ -26,7 +25,6 @@ updates:
         patterns:
           - "*"
 
-  # Base image digest bumps are not auto-merged (no semver update type).
   - package-ecosystem: "docker"
     directory: "/"
     schedule:

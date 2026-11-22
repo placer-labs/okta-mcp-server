@@ -1,46 +1,38 @@
 name: dependabot auto-merge
 
-# Merges open Dependabot PRs once every PR workflow on the head commit is green,
-# the bump is patch/minor, and each new release is at least MIN_AGE_DAYS old.
-# Runs on a schedule (not on pull_request) so it never races CI and also picks
-# up PRs whose releases age past the threshold later.
+# GitHub's documented pattern: enable native auto-merge on Dependabot PRs so
+# GitHub merges them once the required status checks pass. Release age is
+# handled by `cooldown` in .github/dependabot.yml (version updates wait 7 days;
+# security updates skip the cooldown and merge as soon as CI is green).
 on:
-  schedule:
-    - cron: "17 */3 * * *"
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: "Only report what would be merged"
-        type: boolean
-        default: true
+  pull_request:
 
 permissions: {}
-
-concurrency:
-  group: dependabot-automerge
-  cancel-in-progress: false
 
 jobs:
   automerge:
     runs-on: ubuntu-24.04
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == github.event.pull_request.head.repo.full_name
 
     permissions:
-      contents: write       # merge PRs
-      pull-requests: write  # approve PRs
-      actions: write        # dispatch the image build (GITHUB_TOKEN merges skip push workflows)
+      contents: write       # enable auto-merge
+      pull-requests: write  # approve
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          sparse-checkout: .github/scripts
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
 
-      - name: Merge eligible Dependabot PRs
+      # Majors stay manual.
+      - name: Enable auto-merge and approve
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
           MERGE_METHOD: squash
-          MIN_AGE_DAYS: "7"
-          POST_MERGE_WORKFLOW: on_push_to_placer_main.yaml
-          DRY_RUN: ${{ inputs.dry_run || 'false' }}
-        run: python3 .github/scripts/dependabot_automerge.py
+        run: |
+          gh pr merge --auto "--${MERGE_METHOD}" "$PR_URL"
+          # Fails while the org disallows Actions approving PRs; auto-merge stays
+          # armed and completes once a human approves.
+          gh pr review --approve "$PR_URL" \
+            || echo "::warning::Could not approve (org policy?); waiting for a human review."
