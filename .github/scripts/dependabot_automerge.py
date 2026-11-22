@@ -158,8 +158,8 @@ def evaluate(pr: dict) -> tuple[bool, str]:
         update_type = dep.get("update-type")
         if update_type not in ALLOWED_UPDATE_TYPES:
             return False, f"{name}: update type {update_type!r} needs a human"
-        if not version:
-            return False, f"{name}: no target version in metadata"
+        if not name or not version:
+            return False, f"{name}: incomplete dependency metadata"
         when = published_at(ecosystem, name, version)
         if when is None:
             return False, f"{name}@{version}: publish date unknown"
