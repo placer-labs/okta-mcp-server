@@ -136,12 +136,20 @@ if MCP_TRANSPORT == "streamable-http":
     # for local development.
     _require_consent_raw = os.environ.get("REQUIRE_AUTHORIZATION_CONSENT", "true").lower()
     _require_consent: bool | str = "external" if _require_consent_raw == "external" else _require_consent_raw == "true"
+    # Client registration is unauthenticated, so without a lifetime every
+    # registration stays in client storage forever. A client that gets or
+    # refreshes a token renews its registration; abandoned ones expire.
+    # Default 30 days. Set OKTA_CLIENT_REGISTRATION_TTL=0 to keep them forever.
+    _client_registration_ttl = int(os.environ.get("OKTA_CLIENT_REGISTRATION_TTL", str(30 * 24 * 3600))) or None
 
     _auth = OAuthProxy(
         upstream_authorization_endpoint=f"{_okta_org_url}/oauth2/v1/authorize",
         upstream_token_endpoint=f"{_okta_org_url}/oauth2/v1/token",
         upstream_client_id=_okta_client_id,
         upstream_client_secret=_okta_client_secret,
+        # Revoking a token here also revokes the Okta token behind it, instead of
+        # leaving that one valid until it expires.
+        upstream_revocation_endpoint=f"{_okta_org_url}/oauth2/v1/revoke",
         token_verifier=IntrospectionTokenVerifier(
             introspection_url=f"{_okta_org_url}/oauth2/v1/introspect",
             client_id=_okta_client_id,
@@ -157,12 +165,18 @@ if MCP_TRANSPORT == "streamable-http":
         # clients (e.g. Claude Code) register with no scopes and hit invalid_scope on
         # authorize. Also advertises the set on the /.well-known metadata endpoints.
         valid_scopes=_okta_scopes.split(),
+        client_registration_ttl_seconds=_client_registration_ttl,
     )
 
     mcp = FastMCP(
         "Okta IDaaS MCP Server",
         lifespan=okta_authorisation_flow,
         auth=_auth,
+        # Unexpected exceptions reach remote clients as "Error calling tool X"
+        # instead of their internal text. ToolErrors, argument validation errors
+        # and upstream rate limits/timeouts still come through. Set
+        # FASTMCP_MASK_ERROR_DETAILS=false to see the details while debugging.
+        mask_error_details=None if "FASTMCP_MASK_ERROR_DETAILS" in os.environ else True,
     )
 else:
     mcp = FastMCP(
