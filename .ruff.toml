@@ -49,12 +49,6 @@ ignore = [
     # `ruff format` handles line length for code; long lines that remain are
     # license-header boilerplate and other intentionally untouched text.
     "line-too-long",
-    # typing.List/Optional -> list/X | None across every tool signature. Pure
-    # style, and rewriting the upstream-derived tool modules would make every
-    # future upstream port conflict.
-    "non-pep585-annotation",
-    "non-pep604-annotation-optional",
-    "deprecated-import",
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.

@@ -14,7 +14,7 @@ import sys
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Literal, Optional, cast
+from typing import Literal, cast
 
 from fastmcp import FastMCP
 from loguru import logger
@@ -112,7 +112,7 @@ if MCP_TRANSPORT == "streamable-http":
 
     _override_signing_key = os.environ.get("OKTA_JWT_SIGNING_KEY")
     if _override_signing_key:
-        _jwt_signing_key: Optional[bytes] = _derive_jwt_key(
+        _jwt_signing_key: bytes | None = _derive_jwt_key(
             low_entropy_material=_override_signing_key,
             salt="fastmcp-jwt-signing-key",
         )

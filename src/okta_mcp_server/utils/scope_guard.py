@@ -19,7 +19,8 @@ from __future__ import annotations
 
 import functools
 import os
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from fastmcp.exceptions import ToolError
 from loguru import logger

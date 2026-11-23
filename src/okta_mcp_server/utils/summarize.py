@@ -17,10 +17,10 @@ reducing token usage.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
-def _obj_to_dict(obj: Any) -> Dict[str, Any]:
+def _obj_to_dict(obj: Any) -> dict[str, Any]:
     """Convert an Okta SDK object to a plain dictionary.
 
     Tries ``as_dict()`` first (available on most Okta SDK models),
@@ -43,7 +43,7 @@ def _obj_to_dict(obj: Any) -> Dict[str, Any]:
     return {"value": str(obj)}
 
 
-def _pick(source: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
+def _pick(source: dict[str, Any], keys: list[str]) -> dict[str, Any]:
     """Return a new dict containing only *keys* that exist in *source*."""
     return {k: source[k] for k in keys if k in source}
 
@@ -52,7 +52,7 @@ def _snake(key: str) -> str:
     return re.sub(r"(?<!^)(?=[A-Z])", "_", key).lower()
 
 
-def _sub(source: Any, key: str) -> Dict[str, Any]:
+def _sub(source: Any, key: str) -> dict[str, Any]:
     """Return the nested object at *key* (camelCase or snake_case) as a dict, or {}."""
     if not isinstance(source, dict):
         return {}
@@ -64,9 +64,9 @@ def _sub(source: Any, key: str) -> Dict[str, Any]:
     return _obj_to_dict(value)
 
 
-def _pick_either(source: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
+def _pick_either(source: dict[str, Any], keys: list[str]) -> dict[str, Any]:
     """Like ``_pick`` but also matches the snake_case form; output is keyed by *keys*."""
-    out: Dict[str, Any] = {}
+    out: dict[str, Any] = {}
     for k in keys:
         v = source.get(k)
         if v is None:
@@ -91,13 +91,13 @@ _APP_FIELDS = [
 ]
 
 
-def summarize_application(app: Any) -> Dict[str, Any]:
+def summarize_application(app: Any) -> dict[str, Any]:
     """Return a compact summary of an Application object."""
     d = _obj_to_dict(app)
     return _pick(d, _APP_FIELDS)
 
 
-def summarize_applications(apps: List[Any]) -> List[Dict[str, Any]]:
+def summarize_applications(apps: list[Any]) -> list[dict[str, Any]]:
     """Summarize a list of Application objects."""
     return [summarize_application(a) for a in apps]
 
@@ -137,11 +137,11 @@ _APP_SAML_SIGN_ON_FIELDS = [
 ]
 
 
-def _compact(d: Dict[str, Any]) -> Dict[str, Any]:
+def _compact(d: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in d.items() if v not in (None, {})}
 
 
-def summarize_application_detail(app: Any) -> Dict[str, Any]:
+def summarize_application_detail(app: Any) -> dict[str, Any]:
     """Return the compact summary plus allowlisted security-relevant settings and credentials."""
     d = _obj_to_dict(app)
     result = _pick(d, _APP_FIELDS)
@@ -191,7 +191,7 @@ _GROUP_FIELDS = [
 ]
 
 
-def _pick_alias(d: Dict[str, Any], *keys: str) -> Any:
+def _pick_alias(d: dict[str, Any], *keys: str) -> Any:
     """Return the first present value across alias / snake_case key variants."""
     for k in keys:
         v = d.get(k)
@@ -200,7 +200,7 @@ def _pick_alias(d: Dict[str, Any], *keys: str) -> Any:
     return None
 
 
-def summarize_group(group: Any) -> Dict[str, Any]:
+def summarize_group(group: Any) -> dict[str, Any]:
     """Return a compact summary of a Group object.
 
     When the group was fetched with ``expand=stats``, the embedded counts
@@ -236,7 +236,7 @@ def summarize_group(group: Any) -> Dict[str, Any]:
     return out
 
 
-def summarize_groups(groups: List[Any]) -> List[Dict[str, Any]]:
+def summarize_groups(groups: list[Any]) -> list[dict[str, Any]]:
     """Summarize a list of Group objects."""
     return [summarize_group(g) for g in groups]
 
@@ -264,13 +264,13 @@ _USER_PROFILE_FIELDS = [
 ]
 
 
-def _summarize_profile(profile: Any) -> Dict[str, Any]:
+def _summarize_profile(profile: Any) -> dict[str, Any]:
     """Return a compact summary of a user profile."""
     d = _obj_to_dict(profile)
     return _pick(d, _USER_PROFILE_FIELDS)
 
 
-def summarize_user(user: Any) -> Dict[str, Any]:
+def summarize_user(user: Any) -> dict[str, Any]:
     """Return a compact summary of a User object."""
     d = _obj_to_dict(user)
     result = _pick(d, _USER_FIELDS)
@@ -279,7 +279,7 @@ def summarize_user(user: Any) -> Dict[str, Any]:
     return result
 
 
-def summarize_users(users: List[Any]) -> List[Dict[str, Any]]:
+def summarize_users(users: list[Any]) -> list[dict[str, Any]]:
     """Summarize a list of User objects."""
     return [summarize_user(u) for u in users]
 
@@ -303,7 +303,7 @@ _LOG_SECURITY_CONTEXT_FIELDS = ["asNumber", "asOrg", "isp", "isProxy"]
 _MAX_UA_LEN = 256
 
 
-def _summarize_log_client(d: Dict[str, Any]) -> Dict[str, Any]:
+def _summarize_log_client(d: dict[str, Any]) -> dict[str, Any]:
     client = _sub(d, "client")
     out = _pick_either(client, ["ipAddress", "zone"])
     geo = _pick_either(_sub(client, "geographicalContext"), _LOG_GEO_FIELDS)
@@ -318,7 +318,7 @@ def _summarize_log_client(d: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-def summarize_log(log: Any) -> Dict[str, Any]:
+def summarize_log(log: Any) -> dict[str, Any]:
     """Return a compact summary of a LogEvent object."""
     d = _obj_to_dict(log)
     result = _pick(d, _LOG_FIELDS)
@@ -342,7 +342,7 @@ def summarize_log(log: Any) -> Dict[str, Any]:
     return result
 
 
-def summarize_logs(logs: List[Any]) -> List[Dict[str, Any]]:
+def summarize_logs(logs: list[Any]) -> list[dict[str, Any]]:
     """Summarize a list of LogEvent objects."""
     return [summarize_log(log) for log in logs]
 
@@ -377,26 +377,26 @@ _POLICY_RULE_FIELDS = [
 ]
 
 
-def summarize_policy(policy: Dict[str, Any]) -> Dict[str, Any]:
+def summarize_policy(policy: dict[str, Any]) -> dict[str, Any]:
     """Return a compact summary of a Policy dict (already from as_dict())."""
     if not isinstance(policy, dict):
         policy = _obj_to_dict(policy)
     return _pick(policy, _POLICY_FIELDS)
 
 
-def summarize_policies(policies: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def summarize_policies(policies: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Summarize a list of Policy dicts."""
     return [summarize_policy(p) for p in policies]
 
 
-def summarize_policy_rule(rule: Dict[str, Any]) -> Dict[str, Any]:
+def summarize_policy_rule(rule: dict[str, Any]) -> dict[str, Any]:
     """Return a compact summary of a PolicyRule dict."""
     if not isinstance(rule, dict):
         rule = _obj_to_dict(rule)
     return _pick(rule, _POLICY_RULE_FIELDS)
 
 
-def summarize_policy_rules(rules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def summarize_policy_rules(rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Summarize a list of PolicyRule dicts."""
     return [summarize_policy_rule(r) for r in rules]
 
@@ -414,14 +414,14 @@ _GROUP_RULE_FIELDS = [
 ]
 
 
-def summarize_group_rule(rule: Any) -> Dict[str, Any]:
+def summarize_group_rule(rule: Any) -> dict[str, Any]:
     """Return a compact summary of a GroupRule dict."""
     if not isinstance(rule, dict):
         rule = _obj_to_dict(rule)
     return _pick(rule, _GROUP_RULE_FIELDS)
 
 
-def summarize_group_rules(rules: List[Any]) -> List[Dict[str, Any]]:
+def summarize_group_rules(rules: list[Any]) -> list[dict[str, Any]]:
     """Summarize a list of GroupRule dicts."""
     return [summarize_group_rule(r) for r in rules]
 
@@ -431,7 +431,7 @@ def summarize_group_rules(rules: List[Any]) -> List[Dict[str, Any]]:
 _DEVICE_ASSURANCE_DROP_KEYS = {"_links", "links"}
 
 
-def summarize_device_assurance_policy(policy: Any) -> Dict[str, Any]:
+def summarize_device_assurance_policy(policy: Any) -> dict[str, Any]:
     """Return a device assurance policy without its HAL link metadata.
 
     Every other field is kept: the set of compliance attributes differs per platform
@@ -444,7 +444,7 @@ def summarize_device_assurance_policy(policy: Any) -> Dict[str, Any]:
     return {k: v for k, v in policy.items() if k not in _DEVICE_ASSURANCE_DROP_KEYS}
 
 
-def summarize_device_assurance_policies(policies: List[Any]) -> List[Dict[str, Any]]:
+def summarize_device_assurance_policies(policies: list[Any]) -> list[dict[str, Any]]:
     """Summarize a list of device assurance policies."""
     return [summarize_device_assurance_policy(p) for p in policies]
 
@@ -464,12 +464,12 @@ _API_TOKEN_FIELDS = [
 ]
 
 
-def summarize_api_token(token: Any) -> Dict[str, Any]:
+def summarize_api_token(token: Any) -> dict[str, Any]:
     """Return API token metadata. The API never returns token values; this allowlist keeps it that way."""
     return _pick_either(_obj_to_dict(token), _API_TOKEN_FIELDS)
 
 
-def summarize_api_tokens(tokens: List[Any]) -> List[Dict[str, Any]]:
+def summarize_api_tokens(tokens: list[Any]) -> list[dict[str, Any]]:
     return [summarize_api_token(t) for t in tokens]
 
 
@@ -490,7 +490,7 @@ def _scrub(value: Any) -> Any:
     return value
 
 
-def summarize_authenticator(authenticator: Any) -> Dict[str, Any]:
+def summarize_authenticator(authenticator: Any) -> dict[str, Any]:
     """Return an authenticator's identity, status and settings; provider configuration (Duo keys etc.) is omitted."""
     d = _obj_to_dict(authenticator)
     result = _pick_either(d, _AUTHENTICATOR_FIELDS)
@@ -503,7 +503,7 @@ def summarize_authenticator(authenticator: Any) -> Dict[str, Any]:
     return result
 
 
-def summarize_authenticators(authenticators: List[Any]) -> List[Dict[str, Any]]:
+def summarize_authenticators(authenticators: list[Any]) -> list[dict[str, Any]]:
     return [summarize_authenticator(a) for a in authenticators]
 
 
@@ -512,9 +512,9 @@ def summarize_authenticators(authenticators: List[Any]) -> List[Dict[str, Any]]:
 _ROLE_FIELDS = ["id", "type", "label", "assignmentType", "status", "role", "resource-set", "created", "lastUpdated"]
 
 
-def summarize_role(role: Any) -> Dict[str, Any]:
+def summarize_role(role: Any) -> dict[str, Any]:
     """Return a role assignment, unwrapping the SDK's oneOf (StandardRole | CustomRole) container."""
-    inner: Optional[Any] = getattr(role, "actual_instance", None)
+    inner: Any | None = getattr(role, "actual_instance", None)
     d = _obj_to_dict(inner if inner is not None else role)
     out = _pick_either(d, _ROLE_FIELDS)
     if "resource-set" not in out and d.get("resource_set") is not None:
@@ -522,7 +522,7 @@ def summarize_role(role: Any) -> Dict[str, Any]:
     return out
 
 
-def summarize_roles(roles: List[Any]) -> List[Dict[str, Any]]:
+def summarize_roles(roles: list[Any]) -> list[dict[str, Any]]:
     return [summarize_role(r) for r in roles]
 
 
@@ -546,13 +546,13 @@ _NETWORK_ZONE_FIELDS = [
 ]
 
 
-def summarize_network_zone(zone: Any) -> Dict[str, Any]:
+def summarize_network_zone(zone: Any) -> dict[str, Any]:
     """Return a zone's definition (IP ranges, locations, ASNs), unwrapping the SDK's per-type subclass."""
-    inner: Optional[Any] = getattr(zone, "actual_instance", None)
+    inner: Any | None = getattr(zone, "actual_instance", None)
     return _pick_either(_obj_to_dict(inner if inner is not None else zone), _NETWORK_ZONE_FIELDS)
 
 
-def summarize_network_zones(zones: List[Any]) -> List[Dict[str, Any]]:
+def summarize_network_zones(zones: list[Any]) -> list[dict[str, Any]]:
     return [summarize_network_zone(z) for z in zones]
 
 
@@ -561,13 +561,13 @@ def summarize_network_zones(zones: List[Any]) -> List[Dict[str, Any]]:
 _USER_FACTOR_FIELDS = ["id", "factorType", "provider", "vendorName", "status", "created", "lastUpdated"]
 
 
-def summarize_user_factor(factor: Any) -> Dict[str, Any]:
+def summarize_user_factor(factor: Any) -> dict[str, Any]:
     """Return a factor enrollment's type and status; the profile (phone number, email, device details) is omitted."""
-    inner: Optional[Any] = getattr(factor, "actual_instance", None)
+    inner: Any | None = getattr(factor, "actual_instance", None)
     return _pick_either(_obj_to_dict(inner if inner is not None else factor), _USER_FACTOR_FIELDS)
 
 
-def summarize_user_factors(factors: List[Any]) -> List[Dict[str, Any]]:
+def summarize_user_factors(factors: list[Any]) -> list[dict[str, Any]]:
     return [summarize_user_factor(f) for f in factors]
 
 
@@ -577,7 +577,7 @@ _CUSTOM_ROLE_FIELDS = ["id", "label", "description", "created", "lastUpdated"]
 _PERMISSION_FIELDS = ["label", "conditions"]
 
 
-def summarize_custom_role(role: Any, permissions: Optional[List[Any]] = None) -> Dict[str, Any]:
+def summarize_custom_role(role: Any, permissions: list[Any] | None = None) -> dict[str, Any]:
     out = _pick_either(_obj_to_dict(role), _CUSTOM_ROLE_FIELDS)
     if permissions is not None:
         out["permissions"] = [_pick_either(_obj_to_dict(p), _PERMISSION_FIELDS) for p in permissions]

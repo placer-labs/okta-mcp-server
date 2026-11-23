@@ -16,8 +16,9 @@ as ``isError=True``, the same way the fork's own tools report them.
 
 import functools
 import inspect
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from fastmcp.exceptions import ToolError
 from loguru import logger

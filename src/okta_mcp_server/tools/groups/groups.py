@@ -5,7 +5,6 @@
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-from typing import Optional
 
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
@@ -29,12 +28,12 @@ from okta_mcp_server.utils.validation import validate_ids
 async def list_groups(
     ctx: Context,
     search: str = "",
-    filter: Optional[str] = None,
-    q: Optional[str] = None,
+    filter: str | None = None,
+    q: str | None = None,
     fetch_all: bool = False,
-    after: Optional[str] = None,
-    limit: Optional[int] = None,
-    expand: Optional[str] = None,
+    after: str | None = None,
+    limit: int | None = None,
+    expand: str | None = None,
 ):
     """List all the groups from the Okta organization with pagination support.
     If search, filter, or q is specified, it will list only those groups that satisfy the condition.
@@ -338,8 +337,8 @@ async def list_group_users(
     group_id: str,
     ctx: Context | None = None,
     fetch_all: bool = False,
-    after: Optional[str] = None,
-    limit: Optional[int] = None,
+    after: str | None = None,
+    limit: int | None = None,
 ):
     """List all users in a group by ID from the Okta organization with pagination support.
 
@@ -424,8 +423,8 @@ async def list_group_apps(
     group_id: str,
     ctx: Context | None = None,
     fetch_all: bool = False,
-    after: Optional[str] = None,
-    limit: Optional[int] = None,
+    after: str | None = None,
+    limit: int | None = None,
 ):
     """List all applications assigned to a group by ID from the Okta organization with pagination support.
 

@@ -7,7 +7,7 @@
 
 import asyncio
 import json
-from typing import Any, Dict, Optional
+from typing import Any
 from urllib.parse import urlencode
 
 import okta.models as okta_models
@@ -31,7 +31,7 @@ from okta_mcp_server.utils.summarize import (
 )
 from okta_mcp_server.utils.validation import validate_ids
 
-_SIGN_ON_MODE_MODEL_MAP: Dict[str, Any] = {
+_SIGN_ON_MODE_MODEL_MAP: dict[str, Any] = {
     "BOOKMARK": okta_models.BookmarkApplication,
     "AUTO_LOGIN": okta_models.AutoLoginApplication,
     "BASIC_AUTH": okta_models.BasicAuthApplication,
@@ -44,7 +44,7 @@ _SIGN_ON_MODE_MODEL_MAP: Dict[str, Any] = {
 }
 
 
-def _build_application_model(app_config: Dict[str, Any]) -> Any:
+def _build_application_model(app_config: dict[str, Any]) -> Any:
     sign_on_mode = app_config.get("signOnMode") or app_config.get("sign_on_mode", "")
     model_cls = _SIGN_ON_MODE_MODEL_MAP.get(str(sign_on_mode).upper(), okta_models.Application)
     return model_cls.from_dict(app_config)
@@ -53,12 +53,12 @@ def _build_application_model(app_config: Dict[str, Any]) -> Any:
 @mcp.tool()
 async def list_applications(
     ctx: Context,
-    q: Optional[str] = None,
-    after: Optional[str] = None,
-    limit: Optional[int] = None,
-    filter: Optional[str] = None,
-    expand: Optional[str] = None,
-    include_non_deleted: Optional[bool] = None,
+    q: str | None = None,
+    after: str | None = None,
+    limit: int | None = None,
+    filter: str | None = None,
+    expand: str | None = None,
+    include_non_deleted: bool | None = None,
     fetch_all: bool = False,
 ):
     """List all applications from the Okta organization with pagination support.
@@ -147,7 +147,7 @@ async def list_applications(
 
 @mcp.tool()
 @validate_ids("app_id", error_return_type="dict")
-async def get_application(ctx: Context, app_id: str, expand: Optional[str] = None):
+async def get_application(ctx: Context, app_id: str, expand: str | None = None):
     """Get an application by ID from the Okta organization.
 
     Parameters:
@@ -194,7 +194,7 @@ async def get_application(ctx: Context, app_id: str, expand: Optional[str] = Non
 
 
 @mcp.tool()
-async def create_application(ctx: Context, app_config: Dict[str, Any], activate: bool = True):
+async def create_application(ctx: Context, app_config: dict[str, Any], activate: bool = True):
     """Create a new application in the Okta organization.
 
     Parameters:
@@ -241,7 +241,7 @@ async def create_application(ctx: Context, app_config: Dict[str, Any], activate:
 
 @mcp.tool()
 @validate_ids("app_id", error_return_type="dict")
-async def update_application(ctx: Context, app_id: str, app_config: Dict[str, Any]):
+async def update_application(ctx: Context, app_id: str, app_config: dict[str, Any]):
     """Update an application by ID in the Okta organization.
 
     Parameters:
@@ -437,7 +437,7 @@ _CATALOG_PAGE_DELAY_SECONDS = 0.1
 
 
 async def _catalog_request(
-    client, method: str, url: str, body: Optional[Dict[str, Any]] = None, keep_empty_params: bool = False
+    client, method: str, url: str, body: dict[str, Any] | None = None, keep_empty_params: bool = False
 ) -> tuple:
     """Issue a raw request for catalog/OIN endpoints the typed SDK can't serve.
 
@@ -468,12 +468,12 @@ async def _catalog_request(
     return response, json.loads(response_body) if response_body else None, None
 
 
-def _catalog_url(params: Dict[str, Any]) -> str:
+def _catalog_url(params: dict[str, Any]) -> str:
     query_string = urlencode(params)
     return "/api/v1/catalog/apps" + (f"?{query_string}" if query_string else "")
 
 
-def _catalog_next_cursor(page: list, exhausted_below: int) -> Optional[str]:
+def _catalog_next_cursor(page: list, exhausted_below: int) -> str | None:
     """Synthesize the ``after`` cursor for the next catalog page.
 
     A page shorter than ``exhausted_below`` means the catalog is exhausted;
@@ -494,9 +494,9 @@ def _catalog_next_cursor(page: list, exhausted_below: int) -> Optional[str]:
 @mcp.tool()
 async def list_catalog_apps(
     ctx: Context,
-    q: Optional[str] = None,
-    after: Optional[str] = None,
-    limit: Optional[int] = None,
+    q: str | None = None,
+    after: str | None = None,
+    limit: int | None = None,
     fetch_all: bool = False,
 ) -> dict:
     """Browse the Okta Integration Network (OIN) app catalog.
@@ -570,7 +570,7 @@ async def list_catalog_apps(
         # or loop; names are the catalog's unique keys.
         seen_names = {a["name"] for a in apps if isinstance(a, dict) and a.get("name")}
         pages_fetched = 1
-        pagination_info: Dict[str, Any] = {"stopped_early": False, "stop_reason": None}
+        pagination_info: dict[str, Any] = {"stopped_early": False, "stop_reason": None}
 
         while cursor and pages_fetched < _CATALOG_MAX_PAGES:
             await asyncio.sleep(_CATALOG_PAGE_DELAY_SECONDS)
@@ -670,7 +670,7 @@ async def install_oin_app(
     name: str,
     label: str,
     sign_on_mode: str,
-    settings: Optional[Dict[str, Any]] = None,
+    settings: dict[str, Any] | None = None,
     activate: bool = True,
 ) -> dict:
     """Install an instance of an OIN catalog app (e.g. a provisioning-capable SCIM app).
@@ -700,7 +700,7 @@ async def install_oin_app(
 
     try:
         client = await get_okta_client(manager)
-        app_body: Dict[str, Any] = {"name": name, "label": label, "signOnMode": sign_on_mode}
+        app_body: dict[str, Any] = {"name": name, "label": label, "signOnMode": sign_on_mode}
         if settings:
             app_body["settings"] = settings
 

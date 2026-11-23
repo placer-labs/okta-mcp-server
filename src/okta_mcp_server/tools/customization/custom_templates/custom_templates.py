@@ -58,7 +58,7 @@ Notes:
 """
 
 import functools
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastmcp import Context
 from loguru import logger
@@ -136,7 +136,7 @@ def _serialize(obj) -> Any:
 # ---------------------------------------------------------------------------
 
 
-def _check_no_content_response(result) -> Optional[str]:
+def _check_no_content_response(result) -> str | None:
     """Validate SDK results for operations that return no body on success (HTTP 204).
 
     The Okta Python SDK has a bug in ``send_test_email``,
@@ -181,10 +181,10 @@ def _check_no_content_response(result) -> Optional[str]:
 async def list_email_templates(
     ctx: Context,
     brand_id: str,
-    expand: Optional[List[str]] = None,
-    after: Optional[str] = None,
+    expand: list[str] | None = None,
+    after: str | None = None,
     fetch_all: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """List all email templates for a brand with pagination support.
 
     Returns every Okta-managed email template available on the brand.  By
@@ -215,7 +215,7 @@ async def list_email_templates(
 
     try:
         client = await get_okta_client(manager)
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         if expand:
             kwargs["expand"] = expand
         if after:
@@ -266,8 +266,8 @@ async def get_email_template(
     ctx: Context,
     brand_id: str,
     template_name: str,
-    expand: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    expand: list[str] | None = None,
+) -> dict[str, Any]:
     """Retrieve a single email template for a brand.
 
     Returns the named Okta email template with its navigation links.  Pass
@@ -319,9 +319,9 @@ async def list_email_customizations(
     ctx: Context,
     brand_id: str,
     template_name: str,
-    after: Optional[str] = None,
+    after: str | None = None,
     fetch_all: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """List all customizations for an email template with pagination support.
 
     Returns every language variant that has been created for the specified
@@ -350,7 +350,7 @@ async def list_email_customizations(
 
     try:
         client = await get_okta_client(manager)
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         if after:
             kwargs["after"] = after
 
@@ -408,8 +408,8 @@ async def create_email_customization(
     language: str,
     subject: str,
     body: str,
-    is_default: Optional[bool] = None,
-) -> Dict[str, Any]:
+    is_default: bool | None = None,
+) -> dict[str, Any]:
     """Create a new language customization for an email template.
 
     Adds a new localized variant for the specified email template.  Only one
@@ -517,7 +517,7 @@ async def get_email_customization(
     brand_id: str,
     template_name: str,
     customization_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve a specific email customization by its ID.
 
     Returns the full customization object including the HTML body, subject,
@@ -572,8 +572,8 @@ async def replace_email_customization(
     language: str,
     subject: str,
     body: str,
-    is_default: Optional[bool] = None,
-) -> Dict[str, Any]:
+    is_default: bool | None = None,
+) -> dict[str, Any]:
     """Replace an existing email customization (full update).
 
     Replaces all fields on the specified customization.  All required fields
@@ -645,7 +645,7 @@ async def delete_email_customization(
     template_name: str,
     customization_id: str,
     language: str = "unknown",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete a specific email customization.
 
     Permanently removes the specified language customization from the email
@@ -719,7 +719,7 @@ async def delete_all_email_customizations(
     ctx: Context,
     brand_id: str,
     template_name: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete ALL customizations for an email template.
 
     Permanently removes every language variant from the specified email
@@ -785,7 +785,7 @@ async def get_email_customization_preview(
     brand_id: str,
     template_name: str,
     customization_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Preview a rendered email customization.
 
     Returns the customization with all Okta template variables replaced by
@@ -843,8 +843,8 @@ async def get_email_default_content(
     ctx: Context,
     brand_id: str,
     template_name: str,
-    language: Optional[str] = None,
-) -> Dict[str, Any]:
+    language: str | None = None,
+) -> dict[str, Any]:
     """Retrieve the Okta default content for an email template.
 
     Returns the unmodified Okta-provided subject and body for the specified
@@ -895,8 +895,8 @@ async def get_email_default_content_preview(
     ctx: Context,
     brand_id: str,
     template_name: str,
-    language: Optional[str] = None,
-) -> Dict[str, Any]:
+    language: str | None = None,
+) -> dict[str, Any]:
     """Preview the rendered Okta default content for an email template.
 
     Returns the Okta default subject and body with all template variables
@@ -975,7 +975,7 @@ async def get_email_settings(
     ctx: Context,
     brand_id: str,
     template_name: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve the email settings for a template.
 
     Returns the recipient configuration for the specified email template,
@@ -1023,7 +1023,7 @@ async def replace_email_settings(
     brand_id: str,
     template_name: str,
     recipients: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Replace the email settings for a template.
 
     Updates the recipient configuration for the specified email template.
@@ -1082,8 +1082,8 @@ async def send_test_email(
     ctx: Context,
     brand_id: str,
     template_name: str,
-    language: Optional[str] = None,
-) -> Dict[str, Any]:
+    language: str | None = None,
+) -> dict[str, Any]:
     """Send a test email for a template to the current API user.
 
     Triggers Okta to send a test version of the specified email template to

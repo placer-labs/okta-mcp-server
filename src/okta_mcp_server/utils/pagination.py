@@ -18,7 +18,8 @@ delay, max-page guard) is now provided by the SDK.
 
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from loguru import logger
 from okta.pagination import PaginationHelper, paginate_all
@@ -28,13 +29,13 @@ from okta.pagination import PaginationHelper, paginate_all
 # ---------------------------------------------------------------------------
 
 
-def _headers_of(response: Any) -> Dict[str, Any]:
+def _headers_of(response: Any) -> dict[str, Any]:
     if not response or not hasattr(response, "headers") or not response.headers:
         return {}
     return response.headers
 
 
-def extract_after_cursor(response: Any) -> Optional[str]:
+def extract_after_cursor(response: Any) -> str | None:
     """Extract the 'after' pagination cursor from an Okta SDK ApiResponse."""
     return PaginationHelper.extract_next_cursor(_headers_of(response))
 
@@ -50,12 +51,12 @@ def has_next_page(response: Any) -> bool:
 
 
 async def paginate_all_results(
-    api_fn: Callable[..., Awaitable[Tuple[Any, Any, Any]]],
-    base_params: Dict[str, Any],
-    initial_items: List[Any],
+    api_fn: Callable[..., Awaitable[tuple[Any, Any, Any]]],
+    base_params: dict[str, Any],
+    initial_items: list[Any],
     initial_response: Any,
     max_pages: int = 50,
-) -> Tuple[List[Any], Dict[str, Any]]:
+) -> tuple[list[Any], dict[str, Any]]:
     """Auto-paginate through all pages, returning (all_items, pagination_info).
 
     The first page (``initial_items``) is already fetched by the caller; we
@@ -64,9 +65,9 @@ async def paginate_all_results(
     consumed (``pages_fetched``, ``total_items``, ``stopped_early``,
     ``stop_reason``).
     """
-    all_items: List[Any] = list(initial_items) if initial_items else []
+    all_items: list[Any] = list(initial_items) if initial_items else []
     pages_fetched = 1
-    pagination_info: Dict[str, Any] = {
+    pagination_info: dict[str, Any] = {
         "pages_fetched": 1,
         "total_items": len(all_items),
         "stopped_early": False,
@@ -123,10 +124,10 @@ async def paginate_all_results(
 
 
 def create_paginated_response(
-    items: List[Any], response: Any, fetch_all_used: bool = False, pagination_info: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    items: list[Any], response: Any, fetch_all_used: bool = False, pagination_info: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Create a standardized paginated response dict for MCP tool returns."""
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "items": items,
         "total_fetched": len(items),
         "has_more": False,
@@ -147,14 +148,14 @@ def create_paginated_response(
 
 def build_query_params(
     search: str = "",
-    filter: Optional[str] = None,
-    q: Optional[str] = None,
-    after: Optional[str] = None,
-    limit: Optional[int] = None,
+    filter: str | None = None,
+    q: str | None = None,
+    after: str | None = None,
+    limit: int | None = None,
     **kwargs: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build a query-parameter dict for Okta v3 SDK keyword-argument calls."""
-    query_params: Dict[str, Any] = {}
+    query_params: dict[str, Any] = {}
 
     if search:
         query_params["search"] = search

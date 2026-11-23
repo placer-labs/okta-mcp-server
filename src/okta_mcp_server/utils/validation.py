@@ -17,7 +17,8 @@ import functools
 import inspect
 import os
 import re
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from loguru import logger
 
@@ -415,7 +416,7 @@ _OS_VERSION_FORMAT_ERROR = (
 )
 
 
-def _validate_os_version_string(version: str, platform: str = "") -> Optional[str]:
+def _validate_os_version_string(version: str, platform: str = "") -> str | None:
     """Validate a raw OS version string, returning an error message or None.
 
     Accepts X.Y.Z, X.Y.Z.W, and a bare major version for ANDROID only.
@@ -451,7 +452,7 @@ def validate_os_version_params(*param_names: str, error_return_type: str = "dict
     """
 
     def decorator(func: Callable) -> Callable:
-        def _check_arguments(bound_args) -> Optional[str]:
+        def _check_arguments(bound_args) -> str | None:
             for param_name in param_names:
                 if param_name not in bound_args.arguments:
                     continue

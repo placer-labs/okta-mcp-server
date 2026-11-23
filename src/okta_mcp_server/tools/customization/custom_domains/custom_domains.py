@@ -27,7 +27,7 @@ Certificate types        : PEM
 
 import asyncio
 import pathlib
-from typing import Any, Dict
+from typing import Any
 
 from fastmcp import Context
 from loguru import logger
@@ -53,7 +53,7 @@ from okta_mcp_server.utils.validation import InvalidFilePathError, validate_file
 @mcp.tool()
 @require_scopes("okta.domains.read")
 @json_response
-async def list_custom_domains(ctx: Context) -> Dict[str, Any]:
+async def list_custom_domains(ctx: Context) -> dict[str, Any]:
     """List all custom domains in the Okta organization.
 
     Returns all custom domains including the default Okta subdomain (id:
@@ -112,7 +112,7 @@ async def create_custom_domain(
     ctx: Context,
     domain: str,
     certificate_source_type: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a new custom domain for the Okta organization.
 
     After creating a domain, the response includes DNS records (TXT + CNAME)
@@ -236,7 +236,7 @@ async def create_custom_domain(
 async def get_custom_domain(
     ctx: Context,
     domain_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve a custom domain by its ID.
 
     Parameters:
@@ -290,7 +290,7 @@ async def replace_custom_domain(
     ctx: Context,
     domain_id: str,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Replace the brand associated with a custom domain.
 
     Associates a different brand with the given custom domain. The brand
@@ -349,7 +349,7 @@ async def replace_custom_domain(
 async def delete_custom_domain(
     ctx: Context,
     domain_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete a custom domain by its ID.
 
     Permanently removes the custom domain from the organization. The default
@@ -418,7 +418,7 @@ async def upsert_custom_domain_certificate(
     certificate: str,
     certificate_chain: str,
     private_key_file_path: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Upload or renew the TLS certificate for a MANUAL custom domain.
 
     Creates or replaces the PEM-encoded certificate for a custom domain whose
@@ -513,7 +513,7 @@ async def upsert_custom_domain_certificate(
 async def verify_custom_domain(
     ctx: Context,
     domain_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Verify a custom domain by checking its DNS records.
 
     Triggers Okta to verify that the TXT and CNAME records you added at your

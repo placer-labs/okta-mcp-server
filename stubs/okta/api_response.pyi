@@ -1,10 +1,10 @@
 """Stub for okta.api_response.ApiResponse — minimal surface used by the MCP."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 class ApiResponse:
-    status_code: Optional[int]
-    headers: Dict[str, Any]
+    status_code: int | None
+    headers: dict[str, Any]
     data: Any
     raw_data: Any
 

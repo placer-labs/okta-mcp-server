@@ -38,7 +38,7 @@ Notes:
 
 import asyncio
 import pathlib
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastmcp import Context
 from loguru import logger
@@ -84,7 +84,7 @@ _LOADING_VARIANTS = {e.value for e in LoadingPageTouchPointVariant}
 async def list_brand_themes(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """List all themes for a brand.
 
     Currently each Okta org supports only one theme per brand, so this always
@@ -138,7 +138,7 @@ async def get_brand_theme(
     ctx: Context,
     brand_id: str,
     theme_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve a specific theme by brand ID and theme ID.
 
     Parameters:
@@ -199,10 +199,10 @@ async def replace_brand_theme(
     end_user_dashboard_touch_point_variant: str,
     error_page_touch_point_variant: str,
     email_template_touch_point_variant: str,
-    primary_color_contrast_hex: Optional[str] = None,
-    secondary_color_contrast_hex: Optional[str] = None,
-    loading_page_touch_point_variant: Optional[str] = None,
-) -> Dict[str, Any]:
+    primary_color_contrast_hex: str | None = None,
+    secondary_color_contrast_hex: str | None = None,
+    loading_page_touch_point_variant: str | None = None,
+) -> dict[str, Any]:
     """Replace (fully update) a theme's colours and touchpoint variants.
 
     All five touchpoint variant fields are required. Optional fields default to
@@ -272,7 +272,7 @@ async def replace_brand_theme(
     try:
         client = await get_okta_client(manager)
 
-        request_data: Dict[str, Any] = {
+        request_data: dict[str, Any] = {
             "primary_color_hex": primary_color_hex,
             "secondary_color_hex": secondary_color_hex,
             "sign_in_page_touch_point_variant": SignInPageTouchPointVariant(sign_in_page_touch_point_variant),
@@ -327,7 +327,7 @@ async def upload_brand_theme_logo(
     brand_id: str,
     theme_id: str,
     file_path: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Upload and replace the logo for a theme.
 
     The file must be in PNG, JPG, or GIF format and less than 100 kB. For
@@ -392,7 +392,7 @@ async def delete_brand_theme_logo(
     ctx: Context,
     brand_id: str,
     theme_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete the custom logo for a theme.
 
     After deletion the theme falls back to the default Okta logo. This
@@ -456,7 +456,7 @@ async def upload_brand_theme_favicon(
     brand_id: str,
     theme_id: str,
     file_path: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Upload and replace the favicon for a theme.
 
     The file must be in PNG, JPG, or GIF format and less than 2 MB in size.
@@ -519,7 +519,7 @@ async def delete_brand_theme_favicon(
     ctx: Context,
     brand_id: str,
     theme_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete the custom favicon for a theme.
 
     After deletion the theme falls back to the default Okta favicon. This
@@ -583,7 +583,7 @@ async def upload_brand_theme_background_image(
     brand_id: str,
     theme_id: str,
     file_path: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Upload and replace the background image for a theme.
 
     The file must be in PNG, JPG, or GIF format and less than 2 MB in size.
@@ -648,7 +648,7 @@ async def delete_brand_theme_background_image(
     ctx: Context,
     brand_id: str,
     theme_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete the background image for a theme.
 
     After deletion the theme no longer has a background image. Touchpoint

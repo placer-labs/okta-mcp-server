@@ -19,7 +19,7 @@ for every operation available in the Brands API:
     - list_brand_domains  GET  /api/v1/brands/{brandId}/domains
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastmcp import Context
 from loguru import logger
@@ -46,7 +46,7 @@ from okta_mcp_server.utils.validation import validate_ids
 # ---------------------------------------------------------------------------
 
 
-def _build_default_app(default_app_dict: Dict[str, Any]) -> DefaultApp:
+def _build_default_app(default_app_dict: dict[str, Any]) -> DefaultApp:
     """Convert a user-supplied dict into a ``DefaultApp`` model.
 
     Accepts both camelCase keys (``appInstanceId``) and snake_case keys
@@ -66,10 +66,10 @@ def _build_default_app(default_app_dict: Dict[str, Any]) -> DefaultApp:
 @json_response
 async def list_brands(
     ctx: Context,
-    expand: Optional[List[str]] = None,
-    after: Optional[str] = None,
-    limit: Optional[int] = None,
-    q: Optional[str] = None,
+    expand: list[str] | None = None,
+    after: str | None = None,
+    limit: int | None = None,
+    q: str | None = None,
     fetch_all: bool = False,
 ) -> dict:
     """List all brands in the Okta organization with pagination support.
@@ -119,7 +119,7 @@ async def list_brands(
     try:
         client = await get_okta_client(manager)
 
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         if expand:
             kwargs["expand"] = expand
         if after:
@@ -144,7 +144,7 @@ async def list_brands(
         if fetch_all and response and _has_more:
             logger.info(f"fetch_all=True, auto-paginating from initial {len(brands)} brand(s)")
 
-            base_params: Dict[str, Any] = {k: v for k, v in kwargs.items() if k != "after"}
+            base_params: dict[str, Any] = {k: v for k, v in kwargs.items() if k != "after"}
             all_brands, pagination_info = await paginate_all_results(client.list_brands, base_params, brands, response)
             logger.info(
                 f"Successfully retrieved {len(all_brands)} brand(s) across {pagination_info['pages_fetched']} page(s)"
@@ -173,8 +173,8 @@ async def list_brands(
 async def get_brand(
     ctx: Context,
     brand_id: str,
-    expand: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    expand: list[str] | None = None,
+) -> dict[str, Any]:
     """Retrieve a specific brand by its ID.
 
     Parameters:
@@ -192,7 +192,7 @@ async def get_brand(
     try:
         client = await get_okta_client(manager)
 
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         if expand:
             kwargs["expand"] = expand
 
@@ -230,7 +230,7 @@ async def get_brand(
 async def create_brand(
     ctx: Context,
     name: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a new brand in the Okta organization.
 
     A brand controls the look-and-feel of the sign-in page, error pages,
@@ -312,13 +312,13 @@ async def replace_brand(
     ctx: Context,
     brand_id: str,
     name: str,
-    agree_to_custom_privacy_policy: Optional[bool] = None,
-    custom_privacy_policy_url: Optional[str] = None,
-    remove_powered_by_okta: Optional[bool] = None,
-    locale: Optional[str] = None,
-    email_domain_id: Optional[str] = None,
-    default_app: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    agree_to_custom_privacy_policy: bool | None = None,
+    custom_privacy_policy_url: str | None = None,
+    remove_powered_by_okta: bool | None = None,
+    locale: str | None = None,
+    email_domain_id: str | None = None,
+    default_app: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Replace (fully update) a brand by its ID.
 
     This is a full replacement (HTTP PUT). Every writable field in the brand
@@ -362,7 +362,7 @@ async def replace_brand(
         client = await get_okta_client(manager)
 
         # Build the BrandRequest model — only include fields the caller supplied
-        brand_data: Dict[str, Any] = {"name": name}
+        brand_data: dict[str, Any] = {"name": name}
 
         if agree_to_custom_privacy_policy is not None:
             brand_data["agreeToCustomPrivacyPolicy"] = agree_to_custom_privacy_policy
@@ -411,7 +411,7 @@ async def replace_brand(
 async def delete_brand(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete a brand by its ID.
 
     The user is asked to confirm before the deletion is carried out.
@@ -476,7 +476,7 @@ async def delete_brand(
 async def list_brand_domains(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """List all custom domains associated with a brand.
 
     Each brand can have one or more domains.  The default Okta subdomain
