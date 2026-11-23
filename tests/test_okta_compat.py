@@ -144,3 +144,48 @@ def test_ambiguous_one_of_roles_resolve_to_a_concrete_schema(deserializer):
     assert standard.label == "Super Administrator"
     assert type(custom).__name__ == "CustomRole"
     assert custom.resource_set == "iam0"
+
+
+# Policy rules whose platform condition targets LINUX or CHROMEOS: the Okta API
+# returns them, but okta 3.4.7's PolicyPlatformOperatingSystemType enum only lists
+# ANDROID, ANY, IOS, OSX, OTHER and WINDOWS (okta/okta-mcp-server#125, #136). The
+# leniency shim already covers this, so no model-specific workaround is needed.
+_LINUX_POLICY_RULE = {
+    "id": "0pr1",
+    "name": "Linux desktops",
+    "type": "ACCESS_POLICY",
+    "status": "ACTIVE",
+    "priority": 1,
+    "system": False,
+    "conditions": {
+        "platform": {
+            "include": [
+                {"type": "DESKTOP", "os": {"type": "LINUX"}},
+                {"type": "DESKTOP", "os": {"type": "CHROMEOS"}},
+            ],
+            "exclude": [],
+        }
+    },
+    "actions": {"appSignOn": {"access": "ALLOW"}},
+}
+
+
+def test_strict_policy_rule_with_linux_platform_fails_without_patch():
+    from okta.models.policy_rule import PolicyRule
+
+    with pytest.raises(Exception, match="WINDOWS"):
+        PolicyRule.from_dict(_LINUX_POLICY_RULE)
+
+
+@pytest.mark.parametrize("type_name", ["List[PolicyRule]", "PolicyRule"])
+def test_policy_rule_with_linux_platform_survives_deserialization(deserializer, type_name):
+    from okta_mcp_server.utils.summarize import summarize_policy_rule
+
+    payload = [_LINUX_POLICY_RULE] if type_name.startswith("List") else _LINUX_POLICY_RULE
+    result = deserializer.deserialize(json.dumps(payload), type_name)
+    rule = result[0] if isinstance(result, list) else result
+
+    assert type(rule).__name__ == "AccessPolicyRule"
+    summary = summarize_policy_rule(rule)
+    os_types = [entry["os"]["type"] for entry in summary["conditions"]["platform"]["include"]]
+    assert os_types == ["LINUX", "CHROMEOS"]
