@@ -56,4 +56,13 @@ constraint-dependencies = [
     "aiohttp>=3.14.3",
     "anyio>=4.15.1",
     "pygments>=2.21.0",
+    # Security floors for transitive dependencies:
+    # certifi: GHSA-6q48-6c7w-9gw2 (distrusted emSign CAs), fixed in 2026.10.23.
+    "certifi>=2026.10.23",
+    # pydantic: CVE-2026-133429 / GHSA-qpmf-fgh3-ff25, fixed in 2.14.2.
+    "pydantic>=2.14.2",
+    # platformdirs: GHSA-9w45-w2cj-r5hx, fixed in 4.14.0.
+    "platformdirs>=4.14.0",
+    # authlib: GHSA advisories fixed through 1.9.10 (already locked; keep it from regressing).
+    "authlib>=1.9.10",
 ]
