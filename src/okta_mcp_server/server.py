@@ -142,6 +142,21 @@ if MCP_TRANSPORT == "streamable-http":
     # Default 30 days. Set OKTA_CLIENT_REGISTRATION_TTL=0 to keep them forever.
     _client_registration_ttl = int(os.environ.get("OKTA_CLIENT_REGISTRATION_TTL", str(30 * 24 * 3600))) or None
 
+    # OAuth proxy state goes to Valkey when OKTA_OAUTH_PROXY_VALKEY_HOST is set, so
+    # replicas share it; otherwise FastMCP's default encrypted disk store is used.
+    from okta_mcp_server.utils.oauth_storage import build_valkey_storage, valkey_connection_kwargs
+
+    _client_storage = None
+    _valkey = valkey_connection_kwargs()
+    if _valkey:
+        if _jwt_signing_key is None:
+            raise RuntimeError("OKTA_OAUTH_PROXY_VALKEY_HOST requires OKTA_CLIENT_SECRET or OKTA_JWT_SIGNING_KEY")
+        _client_storage = build_valkey_storage(_jwt_signing_key, _valkey)
+        logger.info(
+            f"OAuth proxy storage: Valkey at {_valkey['host']}:{_valkey['port']} db={_valkey['db']}"
+            f"{' (TLS)' if _valkey.get('ssl') else ''}"
+        )
+
     _auth = OAuthProxy(
         upstream_authorization_endpoint=f"{_okta_org_url}/oauth2/v1/authorize",
         upstream_token_endpoint=f"{_okta_org_url}/oauth2/v1/token",
@@ -160,6 +175,7 @@ if MCP_TRANSPORT == "streamable-http":
         require_authorization_consent=_require_consent,
         extra_authorize_params={"scope": _okta_scopes},
         jwt_signing_key=_jwt_signing_key,
+        client_storage=_client_storage,
         # Without this, OAuthProxy derives its default scope from
         # token_verifier.required_scopes — None for introspection — so CIMD and DCR
         # clients (e.g. Claude Code) register with no scopes and hit invalid_scope on

@@ -16,6 +16,7 @@ dependencies = [
     "opentelemetry-instrumentation-aiohttp-client>=0.65b0",
     "opentelemetry-instrumentation-starlette>=0.65b0",
     "opentelemetry-instrumentation-httpx>=0.65b0",
+    "py-key-value-aio[redis]>=0.4.6",
 ]
 
 
@@ -25,6 +26,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "fakeredis>=2.33",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "ruff>=0.16.2",
