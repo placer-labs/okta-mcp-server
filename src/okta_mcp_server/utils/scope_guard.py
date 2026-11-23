@@ -121,9 +121,9 @@ async def prune_tools_by_scope(server: Any, raw_scopes: str | None = None) -> No
 
     for name in sorted(registered & TOOL_SCOPE_REGISTRY.keys()):
         required = TOOL_SCOPE_REGISTRY[name]
-        if read_only and not required.endswith(".read"):
-            _DISABLED_TOOLS[name] = required
-        elif _CONFIGURED_SCOPES and not scope_satisfied(required, _CONFIGURED_SCOPES):
+        if (read_only and not required.endswith(".read")) or (
+            _CONFIGURED_SCOPES and not scope_satisfied(required, _CONFIGURED_SCOPES)
+        ):
             _DISABLED_TOOLS[name] = required
 
     if _DISABLED_TOOLS:

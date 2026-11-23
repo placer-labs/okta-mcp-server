@@ -126,7 +126,8 @@ class TestListCatalogApps:
         urls = [c.kwargs["url"] for c in client.get_request_executor.return_value.create_request.call_args_list]
         assert len(urls) == 3
         assert "after" not in urls[0]
-        assert "after=app_b" in urls[1] and "q=scim" in urls[1]
+        assert "after=app_b" in urls[1]
+        assert "q=scim" in urls[1]
         assert "after=app_d" in urls[2]
 
     @pytest.mark.asyncio

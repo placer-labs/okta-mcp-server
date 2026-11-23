@@ -36,7 +36,8 @@ Notes:
         loadingPageTouchPointVariant      : NONE | OKTA_DEFAULT
 """
 
-import os
+import asyncio
+import pathlib
 from typing import Any, Dict, Optional
 
 from fastmcp import Context
@@ -352,14 +353,13 @@ async def upload_brand_theme_logo(
         logger.error(f"Rejected unsafe file_path for logo upload: {describe_exception(e)}")
         return {"error": describe_exception(e)}
 
-    if not os.path.isfile(safe_path):
+    if not await asyncio.to_thread(pathlib.Path(safe_path).is_file):
         return {"error": f"File not found: {file_path}"}
 
     manager = _resolve_manager(ctx)
 
     try:
-        with open(safe_path, "rb") as fh:
-            file_bytes = fh.read()
+        file_bytes = await asyncio.to_thread(pathlib.Path(safe_path).read_bytes)
 
         client = await get_okta_client(manager)
         result, _, err = await client.upload_brand_theme_logo(brand_id, theme_id, file_bytes)
@@ -480,14 +480,13 @@ async def upload_brand_theme_favicon(
         logger.error(f"Rejected unsafe file_path for favicon upload: {describe_exception(e)}")
         return {"error": describe_exception(e)}
 
-    if not os.path.isfile(safe_path):
+    if not await asyncio.to_thread(pathlib.Path(safe_path).is_file):
         return {"error": f"File not found: {file_path}"}
 
     manager = _resolve_manager(ctx)
 
     try:
-        with open(safe_path, "rb") as fh:
-            file_bytes = fh.read()
+        file_bytes = await asyncio.to_thread(pathlib.Path(safe_path).read_bytes)
 
         client = await get_okta_client(manager)
         result, _, err = await client.upload_brand_theme_favicon(brand_id, theme_id, file_bytes)
@@ -610,14 +609,13 @@ async def upload_brand_theme_background_image(
         logger.error(f"Rejected unsafe file_path for background image upload: {describe_exception(e)}")
         return {"error": describe_exception(e)}
 
-    if not os.path.isfile(safe_path):
+    if not await asyncio.to_thread(pathlib.Path(safe_path).is_file):
         return {"error": f"File not found: {file_path}"}
 
     manager = _resolve_manager(ctx)
 
     try:
-        with open(safe_path, "rb") as fh:
-            file_bytes = fh.read()
+        file_bytes = await asyncio.to_thread(pathlib.Path(safe_path).read_bytes)
 
         client = await get_okta_client(manager)
         result, _, err = await client.upload_brand_theme_background_image(brand_id, theme_id, file_bytes)

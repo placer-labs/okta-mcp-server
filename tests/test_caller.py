@@ -66,7 +66,8 @@ def test_loggable_user_id_hashes_logins():
     assert caller.loggable_user_id(None) is None
     hashed = caller.loggable_user_id("jane@example.com")
     assert hashed is not None
-    assert hashed.startswith("login:") and "jane" not in hashed
+    assert hashed.startswith("login:")
+    assert "jane" not in hashed
     assert hashed == caller.loggable_user_id("jane@example.com")
     assert (
         caller.scrub_user_id("not found: jane@example.com (User)", "jane@example.com") == f"not found: {hashed} (User)"
@@ -121,9 +122,13 @@ async def test_rate_limit_rejects_tool_calls_end_to_end(as_user):
     mcp.add_middleware(limiter)
     as_user("jane@example.com")
     async with Client(mcp) as client:
-        with pytest.raises(MCPError, match="Rate limit exceeded"):
+
+        async def burst():
             for _ in range(10):
                 await client.call_tool("ping")
+
+        with pytest.raises(MCPError, match="Rate limit exceeded"):
+            await burst()
 
 
 @pytest.mark.asyncio

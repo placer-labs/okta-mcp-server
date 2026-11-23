@@ -112,9 +112,8 @@ async def list_groups(
             return create_paginated_response(
                 summarize_groups(all_groups), response, fetch_all_used=True, pagination_info=pagination_info
             )
-        else:
-            logger.info(f"Successfully retrieved {len(groups)} groups")
-            return create_paginated_response(summarize_groups(groups), response, fetch_all_used=fetch_all)
+        logger.info(f"Successfully retrieved {len(groups)} groups")
+        return create_paginated_response(summarize_groups(groups), response, fetch_all_used=fetch_all)
 
     except ToolError:
         raise
@@ -409,9 +408,8 @@ async def list_group_users(
             return create_paginated_response(
                 summarize_users(all_users), response, fetch_all_used=True, pagination_info=pagination_info
             )
-        else:
-            logger.info(f"Successfully retrieved {len(users)} users from group {group_id}")
-            return create_paginated_response(summarize_users(users), response, fetch_all_used=fetch_all)
+        logger.info(f"Successfully retrieved {len(users)} users from group {group_id}")
+        return create_paginated_response(summarize_users(users), response, fetch_all_used=fetch_all)
 
     except ToolError:
         raise
@@ -523,10 +521,9 @@ async def add_user_to_group(group_id: str, user_id: str, ctx: Context | None = N
         # potentially thousands of members).
         logger.debug(f"Checking if user {loggable_user_id(user_id)} is already a member of group {group_id}")
         user_groups, _, groups_err = await client.list_user_groups(user_id)
-        if not groups_err and user_groups:
-            if any(getattr(g, "id", None) == group_id for g in user_groups):
-                logger.info(f"User {loggable_user_id(user_id)} is already a member of group {group_id}")
-                return [{"message": f"User {user_id} is already a member of group {group_id}. No changes made."}]
+        if not groups_err and user_groups and any(getattr(g, "id", None) == group_id for g in user_groups):
+            logger.info(f"User {loggable_user_id(user_id)} is already a member of group {group_id}")
+            return [{"message": f"User {user_id} is already a member of group {group_id}. No changes made."}]
 
         logger.debug(f"Calling Okta API to add user {loggable_user_id(user_id)} to group {group_id}")
         _, _, err = await client.assign_user_to_group(group_id, user_id)

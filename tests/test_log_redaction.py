@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -20,7 +21,7 @@ from okta_mcp_server.tools.users.users import create_user, get_user, list_user_g
 EMAIL = "jane.doe@example.com"
 
 
-@pytest.fixture()
+@pytest.fixture
 def log_lines():
     lines: list[str] = []
     sink_id = logger.add(lines.append, level="DEBUG", format="{message}")
@@ -71,10 +72,8 @@ async def test_user_lookups_by_login_keep_it_out_of_logs(mock_get_client, err, c
     mock_get_client.return_value = client
 
     for tool in (get_user, list_user_groups):
-        try:
+        with contextlib.suppress(ToolError):
             await tool(user_id=EMAIL, ctx=ctx_no_elicitation)
-        except ToolError:
-            pass
 
     joined = "\n".join(log_lines)
     assert log_lines

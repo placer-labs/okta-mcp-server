@@ -56,7 +56,7 @@ _BAD_BROWSER_PLUGIN_APP = {
 }
 
 
-@pytest.fixture()
+@pytest.fixture
 def deserializer():
     """An ApiClient instance with the leniency patch applied.
 
@@ -82,9 +82,8 @@ def test_strict_browser_plugin_app_aborts_without_patch():
     """
     from okta.models.application import Application
 
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(Exception, match="BrowserPluginApplication"):
         Application.from_dict(_BAD_BROWSER_PLUGIN_APP)
-    assert "BrowserPluginApplication" in str(exc_info.value)
 
 
 def test_bad_saml_app_survives_deserialization(deserializer):

@@ -116,9 +116,8 @@ async def list_group_rules(
             return create_paginated_response(
                 summarize_group_rules(all_rules), response, fetch_all_used=True, pagination_info=pagination_info
             )
-        else:
-            logger.info(f"Successfully retrieved {len(rules)} group rules")
-            return create_paginated_response(summarize_group_rules(rules), response, fetch_all_used=fetch_all)
+        logger.info(f"Successfully retrieved {len(rules)} group rules")
+        return create_paginated_response(summarize_group_rules(rules), response, fetch_all_used=fetch_all)
 
     except ToolError:
         raise

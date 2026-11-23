@@ -167,8 +167,6 @@ def build_query_params(
     if limit:
         query_params["limit"] = limit
 
-    for key, value in kwargs.items():
-        if value is not None and value != "":
-            query_params[key] = value
+    query_params.update({key: value for key, value in kwargs.items() if value is not None and value != ""})
 
     return query_params

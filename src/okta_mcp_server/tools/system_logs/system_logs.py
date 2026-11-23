@@ -243,7 +243,7 @@ async def get_logs(
 
         if log_count > 0:
             logger.debug(f"First log entry timestamp: {logs[0].published if hasattr(logs[0], 'published') else 'N/A'}")
-            logger.debug(f"Log types found: {set(log.event_type for log in logs[:10] if hasattr(log, 'event_type'))}")
+            logger.debug(f"Log types found: { {log.event_type for log in logs[:10] if hasattr(log, 'event_type')} }")
 
         if fetch_all and has_next_page(response):
             logger.info(f"fetch_all=True, auto-paginating from initial {log_count} log entries")
@@ -271,5 +271,5 @@ async def get_logs(
         logger.error(f"Exception while retrieving system logs: {type(e).__name__}: {describe_exception(e)}")
         scope_msg = check_logs_scope_error(e)
         if scope_msg:
-            raise ToolError(scope_msg)
+            raise ToolError(scope_msg) from e
         raise ToolError(f"Exception: {describe_exception(e)}") from e

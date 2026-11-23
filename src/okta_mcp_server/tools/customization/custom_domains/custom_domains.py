@@ -25,7 +25,8 @@ Certificate source types : MANUAL | OKTA_MANAGED
 Certificate types        : PEM
 """
 
-import os
+import asyncio
+import pathlib
 from typing import Any, Dict
 
 from fastmcp import Context
@@ -464,11 +465,10 @@ async def upsert_custom_domain_certificate(
 
     # Read the private key from a local file path so the raw PEM key
     # value is never passed through the LLM conversation.
-    if not os.path.isfile(safe_path):
+    if not await asyncio.to_thread(pathlib.Path(safe_path).is_file):
         return {"error": f"Private key file not found: {private_key_file_path!r}"}
     try:
-        with open(safe_path, "r") as _fh:
-            private_key = _fh.read()
+        private_key = await asyncio.to_thread(pathlib.Path(safe_path).read_text)
     except OSError as _read_err:
         logger.error(f"Failed to read private key file {private_key_file_path!r}: {_read_err}")
         return {"error": f"Could not read private key file: {_read_err}"}

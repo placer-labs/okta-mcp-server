@@ -544,7 +544,7 @@ async def list_catalog_apps(
     try:
         client = await get_okta_client(manager)
         query_params = build_query_params(q=q, after=after, limit=limit)
-        page_size = limit if limit else _CATALOG_DEFAULT_PAGE_SIZE
+        page_size = limit or _CATALOG_DEFAULT_PAGE_SIZE
         exhausted_below = min(page_size, _CATALOG_DEFAULT_PAGE_SIZE)
 
         _, apps, err = await _catalog_request(client, "GET", _catalog_url(query_params))

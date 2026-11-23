@@ -143,9 +143,8 @@ async def list_users(
             return create_paginated_response(
                 summarize_users(all_users), response, fetch_all_used=True, pagination_info=pagination_info
             )
-        else:
-            logger.info(f"Successfully retrieved {len(users)} users")
-            return create_paginated_response(summarize_users(users), response, fetch_all_used=fetch_all)
+        logger.info(f"Successfully retrieved {len(users)} users")
+        return create_paginated_response(summarize_users(users), response, fetch_all_used=fetch_all)
 
     except ToolError:
         raise

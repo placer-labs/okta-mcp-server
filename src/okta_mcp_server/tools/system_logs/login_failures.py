@@ -13,7 +13,7 @@ categorised response, rather than relying on the caller to make the paired call.
 """
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastmcp import Context
@@ -127,7 +127,7 @@ async def get_login_failures(
     """
     logger.info("Investigating login failures (FAILURE + DENY)")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     since = since or (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
     until = until or now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 

@@ -88,7 +88,7 @@ def test_loguru_patcher_noop_without_active_span():
 
 
 @pytest.mark.parametrize(
-    "result,expected",
+    ("result", "expected"),
     [
         (_FakeResult(content=[_Block("Exception: boom")]), True),
         (_FakeResult(content=[_Block("Error: nope")]), True),

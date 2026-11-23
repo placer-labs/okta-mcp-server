@@ -13,7 +13,7 @@ attributes a platform does not accept: a policy created with the wrong shape com
 back looking fine while enforcing nothing.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional
 
 import okta.models as okta_models
@@ -157,23 +157,21 @@ _IMPLICATIONS = {
 
 
 def _policy_diff(before: Dict[str, Any], after: Dict[str, Any]) -> List[Dict[str, Any]]:
-    changes = []
-    for key in sorted((set(before) | set(after)) - _DIFF_SKIP_KEYS):
-        if before.get(key) != after.get(key):
-            changes.append(
-                {
-                    "attribute": key,
-                    "before": before.get(key),
-                    "after": after.get(key),
-                    "implication": _IMPLICATIONS.get(key, f"The '{key}' setting has been modified."),
-                }
-            )
-    return changes
+    return [
+        {
+            "attribute": key,
+            "before": before.get(key),
+            "after": after.get(key),
+            "implication": _IMPLICATIONS.get(key, f"The '{key}' setting has been modified."),
+        }
+        for key in sorted((set(before) | set(after)) - _DIFF_SKIP_KEYS)
+        if before.get(key) != after.get(key)
+    ]
 
 
 def _retrieved_note() -> Dict[str, str]:
     return {
-        "retrieved_at": datetime.now(timezone.utc).isoformat(),
+        "retrieved_at": datetime.now(UTC).isoformat(),
         "note": (
             "Policies may have changed since this list was fetched. Call list_device_assurance_policies again "
             "before resolving a policy name to an ID."

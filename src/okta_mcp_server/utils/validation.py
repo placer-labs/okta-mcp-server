@@ -25,8 +25,6 @@ from loguru import logger
 class InvalidOktaIdError(ValueError):
     """Exception raised when an Okta ID contains invalid characters."""
 
-    pass
-
 
 # Characters that are not allowed in Okta IDs to prevent path traversal
 # This includes path separators, URL-reserved characters, and traversal sequences
@@ -115,8 +113,6 @@ def validate_okta_id(id_value: str, id_type: str = "ID") -> str:
 
 class InvalidFilePathError(ValueError):
     """Exception raised when a file path is invalid or potentially unsafe."""
-
-    pass
 
 
 # Path traversal sequences to reject in file paths
@@ -365,8 +361,8 @@ def validate_ids(*id_params: str, error_return_type: str = "list"):
                             logger.error(f"Invalid {param_name}: {e}")
                             if error_return_type == "dict":
                                 return {"error": str(e)}
-                            else:  # default to list
-                                return [f"Error: {e}"]
+                            # default to list
+                            return [f"Error: {e}"]
 
             return await func(*args, **kwargs)
 
@@ -388,8 +384,7 @@ def validate_ids(*id_params: str, error_return_type: str = "list"):
                             logger.error(f"Invalid {param_name}: {e}")
                             if error_return_type == "dict":
                                 return {"error": str(e)}
-                            else:
-                                return [f"Error: {e}"]
+                            return [f"Error: {e}"]
 
             return func(*args, **kwargs)
 

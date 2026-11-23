@@ -117,37 +117,37 @@ def _build_ctx(*, elicitation_supported: bool = True, elicit_return=None, elicit
     return ctx
 
 
-@pytest.fixture()
+@pytest.fixture
 def ctx_elicit_accept_true():
     """Context where elicitation is supported and user accepts with confirm=True."""
     return _build_ctx(elicit_return=_make_accepted_result(confirm=True))
 
 
-@pytest.fixture()
+@pytest.fixture
 def ctx_elicit_accept_false():
     """Context where elicitation is supported and user accepts with confirm=False."""
     return _build_ctx(elicit_return=_make_accepted_result(confirm=False))
 
 
-@pytest.fixture()
+@pytest.fixture
 def ctx_elicit_decline():
     """Context where elicitation is supported and user declines."""
     return _build_ctx(elicit_return=_make_declined_result())
 
 
-@pytest.fixture()
+@pytest.fixture
 def ctx_elicit_cancel():
     """Context where elicitation is supported and user cancels."""
     return _build_ctx(elicit_return=_make_cancelled_result())
 
 
-@pytest.fixture()
+@pytest.fixture
 def ctx_no_elicitation():
     """Context where the client does NOT support elicitation."""
     return _build_ctx(elicitation_supported=False)
 
 
-@pytest.fixture()
+@pytest.fixture
 def ctx_elicit_exception():
     """Context where elicitation is supported but ctx.elicit() raises."""
     return _build_ctx(
@@ -156,7 +156,7 @@ def ctx_elicit_exception():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def ctx_elicit_mcp_error_method_not_found():
     """Context where ctx.elicit() raises MCPError with METHOD_NOT_FOUND."""
     return _build_ctx(
@@ -165,7 +165,7 @@ def ctx_elicit_mcp_error_method_not_found():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def ctx_elicit_mcp_error_other():
     """Context where ctx.elicit() raises MCPError with a non-METHOD_NOT_FOUND code."""
     return _build_ctx(
@@ -179,7 +179,7 @@ def ctx_elicit_mcp_error_other():
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_okta_client():
     """Return a ``MagicMock`` with async Okta client methods pre-configured."""
     client = AsyncMock()
