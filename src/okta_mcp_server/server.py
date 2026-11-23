@@ -144,35 +144,18 @@ if MCP_TRANSPORT == "streamable-http":
 
     # OAuth proxy state goes to Valkey when OKTA_OAUTH_PROXY_VALKEY_HOST is set, so
     # replicas share it; otherwise FastMCP's default encrypted disk store is used.
-    # Encrypted with the same key derivation FastMCP applies to its disk store.
-    _client_storage = None
-    _valkey_host = os.environ.get("OKTA_OAUTH_PROXY_VALKEY_HOST", "").strip()
-    if _valkey_host:
-        from cryptography.fernet import Fernet
-        from key_value.aio.stores.redis import RedisStore
-        from key_value.aio.wrappers.encryption import FernetEncryptionWrapper
+    from okta_mcp_server.utils.oauth_storage import build_valkey_storage, valkey_connection_kwargs
 
+    _client_storage = None
+    _valkey = valkey_connection_kwargs()
+    if _valkey:
         if _jwt_signing_key is None:
             raise RuntimeError("OKTA_OAUTH_PROXY_VALKEY_HOST requires OKTA_CLIENT_SECRET or OKTA_JWT_SIGNING_KEY")
-        _valkey_db = int(os.environ.get("OKTA_OAUTH_PROXY_VALKEY_DB", "0"))
-        _client_storage = FernetEncryptionWrapper(
-            # RedisStore speaks the protocol Valkey serves, through the pure-Python
-            # redis client. valkey-glide ships no musl wheels for the Alpine image.
-            key_value=RedisStore(
-                host=_valkey_host,
-                port=int(os.environ.get("OKTA_OAUTH_PROXY_VALKEY_PORT", "6379")),
-                db=_valkey_db,
-                password=os.environ.get("OKTA_OAUTH_PROXY_VALKEY_PASSWORD") or None,
-            ),
-            fernet=Fernet(
-                key=_derive_jwt_key(
-                    high_entropy_material=_jwt_signing_key.decode(),
-                    salt="fastmcp-storage-encryption-key",
-                )
-            ),
-            raise_on_decryption_error=False,
+        _client_storage = build_valkey_storage(_jwt_signing_key, _valkey)
+        logger.info(
+            f"OAuth proxy storage: Valkey at {_valkey['host']}:{_valkey['port']} db={_valkey['db']}"
+            f"{' (TLS)' if _valkey.get('ssl') else ''}"
         )
-        logger.info(f"OAuth proxy storage: Valkey at {_valkey_host} db={_valkey_db}")
 
     _auth = OAuthProxy(
         upstream_authorization_endpoint=f"{_okta_org_url}/oauth2/v1/authorize",
