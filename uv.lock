@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.13"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -230,15 +230,15 @@ wheels = [
 
 [[package]]
 name = "authlib"
-version = "1.9.1"
+version = "1.9.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
     { name = "joserfc" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/dc/087c08741a98d234c9b98beef8a28d3c309f814d14b6156422c5815bf6d6/authlib-1.9.1.tar.gz", hash = "sha256:5c7d9848f47cac340f060f76ae0bc09b59f5c8e89cc1bb032d4370a0c55b5974", size = 182700, upload-time = "2026-10-14T14:17:52.307Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a9/7c/e1963d10d1d7203ca913a20e377893ec27489db27f5115f25ff50ef7b5bd/authlib-1.9.10.tar.gz", hash = "sha256:f7453c4a3f5975f94cc55223c4d48ff9c7d8d3b4e3d727ed2549edaeb9b85d50", size = 184323, upload-time = "2026-11-20T09:31:59.097Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/44/a46089266de32a0d809023b6bf31b80a1f26a46954446a7ce695a565cbea/authlib-1.9.1-py2.py3-none-any.whl", hash = "sha256:8b9be8b1e5174dcbf5520e984f1a22dc2edae5b6e40a61d4cedbf86b97e9e69b", size = 266042, upload-time = "2026-10-14T14:17:50.695Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/93/a93953ac475b32552eed564d40632ff0ce1db4241a52d9cdcb16ae0480b7/authlib-1.9.10-py2.py3-none-any.whl", hash = "sha256:c62d10e1b23945c6d4c578a16170bfefe4879bd23d4be62edea494993dce70aa", size = 267693, upload-time = "2026-11-20T09:31:57.716Z" },
 ]
 
 [[package]]
@@ -1211,7 +1211,7 @@ wheels = [
 
 [[package]]
 name = "okta"
-version = "3.4.6"
+version = "3.4.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aenum" },
@@ -1227,9 +1227,9 @@ dependencies = [
     { name = "requests" },
     { name = "xmltodict" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/da/bc/f2bbc2767342b039095e6608f745531058f1bdf7de93599b4d70402a7d10/okta-3.4.6.tar.gz", hash = "sha256:068a91390c9b9f9998a84ee2d42cd5c08352ca3a2c447682ea604ff4050ccdf7", size = 3347086, upload-time = "2026-09-21T05:31:45.018Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/19/3e/918d7029f618993b0cf33e35f5a5247a05123b907a95e25d49e66582d3ce/okta-3.4.7.tar.gz", hash = "sha256:bb08d11a86b7b5133896128ab9b54bafb16961d18ffbe85689f2ff994023f953", size = 2440470, upload-time = "2026-10-27T11:10:57.089Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/73/09ecb97feed562edd39ab1111f490949c1ed93dbe21e669e36b00eeee71e/okta-3.4.6-py3-none-any.whl", hash = "sha256:93ff7b8249fa0450ceffdedc39282dc2c306656a4e6d309e4b5ccc52a814d788", size = 3871876, upload-time = "2026-09-21T05:31:40.618Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/39/5c559917d628457a7a18acd313f5c4fa221835fabba04e73f13c92769c93/okta-3.4.7-py3-none-any.whl", hash = "sha256:9d571ec13f56f7a92a8347432b2b983c4853e54bea02b01c2df54197ae854f64", size = 3906629, upload-time = "2026-10-27T11:10:55.228Z" },
 ]
 
 [[package]]
