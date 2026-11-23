@@ -434,6 +434,8 @@ async def delete_email_domain(
         }
 
     try:
+        # The lookup above is best-effort, so the client may not exist yet.
+        client = await get_okta_client(manager)
         _, _, err = await client.delete_email_domain(email_domain_id)
 
         if err:
