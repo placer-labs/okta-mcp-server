@@ -17,15 +17,14 @@ import functools
 import inspect
 import os
 import re
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from loguru import logger
 
 
 class InvalidOktaIdError(ValueError):
     """Exception raised when an Okta ID contains invalid characters."""
-
-    pass
 
 
 # Characters that are not allowed in Okta IDs to prevent path traversal
@@ -115,8 +114,6 @@ def validate_okta_id(id_value: str, id_type: str = "ID") -> str:
 
 class InvalidFilePathError(ValueError):
     """Exception raised when a file path is invalid or potentially unsafe."""
-
-    pass
 
 
 # Path traversal sequences to reject in file paths
@@ -365,8 +362,8 @@ def validate_ids(*id_params: str, error_return_type: str = "list"):
                             logger.error(f"Invalid {param_name}: {e}")
                             if error_return_type == "dict":
                                 return {"error": str(e)}
-                            else:  # default to list
-                                return [f"Error: {e}"]
+                            # default to list
+                            return [f"Error: {e}"]
 
             return await func(*args, **kwargs)
 
@@ -388,8 +385,7 @@ def validate_ids(*id_params: str, error_return_type: str = "list"):
                             logger.error(f"Invalid {param_name}: {e}")
                             if error_return_type == "dict":
                                 return {"error": str(e)}
-                            else:
-                                return [f"Error: {e}"]
+                            return [f"Error: {e}"]
 
             return func(*args, **kwargs)
 
@@ -420,7 +416,7 @@ _OS_VERSION_FORMAT_ERROR = (
 )
 
 
-def _validate_os_version_string(version: str, platform: str = "") -> Optional[str]:
+def _validate_os_version_string(version: str, platform: str = "") -> str | None:
     """Validate a raw OS version string, returning an error message or None.
 
     Accepts X.Y.Z, X.Y.Z.W, and a bare major version for ANDROID only.
@@ -456,7 +452,7 @@ def validate_os_version_params(*param_names: str, error_return_type: str = "dict
     """
 
     def decorator(func: Callable) -> Callable:
-        def _check_arguments(bound_args) -> Optional[str]:
+        def _check_arguments(bound_args) -> str | None:
             for param_name in param_names:
                 if param_name not in bound_args.arguments:
                     continue

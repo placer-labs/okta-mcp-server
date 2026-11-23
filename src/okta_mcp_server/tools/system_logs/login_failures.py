@@ -13,8 +13,8 @@ categorised response, rather than relying on the caller to make the paired call.
 """
 
 import asyncio
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
@@ -50,7 +50,7 @@ def _event_type(event: Any) -> str:
     return getattr(event, "event_type", "") or ""
 
 
-def _categorise(events: List[Any]) -> Dict[str, List[Any]]:
+def _categorise(events: list[Any]) -> dict[str, list[Any]]:
     """Split events into sign-in attempts and everything else."""
     login_events = [e for e in events if _event_type(e) in _LOGIN_EVENT_TYPES]
     other_events = [e for e in events if _event_type(e) not in _LOGIN_EVENT_TYPES]
@@ -63,9 +63,9 @@ async def _fetch_outcome(
     *,
     since: str,
     until: str,
-    user_id: Optional[str] = None,
-    q: Optional[str] = None,
-) -> Tuple[List[Any], Dict[str, Any]]:
+    user_id: str | None = None,
+    q: str | None = None,
+) -> tuple[list[Any], dict[str, Any]]:
     """Fetch every page of log events for one outcome value."""
     filter_expr = f'outcome.result eq "{outcome}"'
     if user_id:
@@ -94,10 +94,10 @@ async def _fetch_outcome(
 @mcp.tool()
 async def get_login_failures(
     ctx: Context | None = None,
-    since: Optional[str] = None,
-    until: Optional[str] = None,
-    user_id: Optional[str] = None,
-    q: Optional[str] = None,
+    since: str | None = None,
+    until: str | None = None,
+    user_id: str | None = None,
+    q: str | None = None,
 ):
     """Investigate why a user failed to log in, covering authentication failures AND policy-blocked sign-ins.
 
@@ -127,7 +127,7 @@ async def get_login_failures(
     """
     logger.info("Investigating login failures (FAILURE + DENY)")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     since = since or (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
     until = until or now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
@@ -167,7 +167,7 @@ async def get_login_failures(
         else "No login failures or policy denials found in this time window."
     )
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "failures": {**failures, "total": len(failure_events), "pagination": failure_pagination},
         "denials": {**denials, "total": len(deny_events), "pagination": deny_pagination},
         "summary": summary,

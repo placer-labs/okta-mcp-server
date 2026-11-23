@@ -16,8 +16,9 @@ as ``isError=True``, the same way the fork's own tools report them.
 
 import functools
 import inspect
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from fastmcp.exceptions import ToolError
 from loguru import logger
@@ -184,7 +185,7 @@ def _is_transport_response(obj: Any) -> bool:
     domain model that happens to share a suffix.
     """
     cls_name = type(obj).__name__
-    if not (cls_name.endswith("APIResponse") or cls_name.endswith("ApiResponse")):
+    if not (cls_name.endswith(("APIResponse", "ApiResponse"))):
         return False
     return hasattr(obj, "headers") or hasattr(obj, "has_next")
 

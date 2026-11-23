@@ -230,7 +230,7 @@ class OktaAuthManager:
 
                     return resp_json["access_token"]
 
-                elif resp_json.get("error") == "authorization_pending":
+                if resp_json.get("error") == "authorization_pending":
                     logger.debug(f"Authorization pending, waiting {device_data['interval']} seconds")
                     sys.stdout.flush()
                     time.sleep(device_data["interval"])
@@ -285,9 +285,8 @@ class OktaAuthManager:
                 self.token_timestamp = int(time.time())
                 logger.info("Token refreshed successfully")
                 return True
-            else:
-                logger.error(f"Failed to refresh token: HTTP {response.status_code} - {response.text}")
-                return False
+            logger.error(f"Failed to refresh token: HTTP {response.status_code} - {response.text}")
+            return False
 
         except requests.RequestException as e:
             logger.error(f"Error during token refresh: {e}")

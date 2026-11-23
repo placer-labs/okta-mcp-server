@@ -30,7 +30,7 @@ Validation status values: NOT_STARTED | POLLING | VERIFIED | ERROR | DELETED
 DNS record fields        : recordType | fqdn | verificationValue
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from fastmcp import Context
 from loguru import logger
@@ -70,7 +70,7 @@ for _member in list(_DNSRecordType):
 async def list_email_domains(
     ctx: Context,
     expand_brands: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """List all email domains in the Okta organization.
 
     Returns every Email Domain configured in the org.  Each domain shows
@@ -141,7 +141,7 @@ async def create_email_domain(
     display_name: str,
     user_name: str,
     validation_subdomain: str = "mail",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a new email domain for the Okta organization.
 
     After creation the response includes DNS records (one TXT record and
@@ -265,7 +265,7 @@ async def get_email_domain(
     ctx: Context,
     email_domain_id: str,
     expand_brands: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve an email domain by its ID.
 
     Parameters:
@@ -324,7 +324,7 @@ async def replace_email_domain(
     email_domain_id: str,
     display_name: str,
     user_name: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Replace the sender display name and username for an email domain.
 
     Only ``display_name`` and ``user_name`` can be updated — the domain
@@ -387,7 +387,7 @@ async def replace_email_domain(
 async def delete_email_domain(
     ctx: Context,
     email_domain_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete an email domain by its ID.
 
     Permanently removes the email domain from the organization.  Any brands
@@ -434,6 +434,8 @@ async def delete_email_domain(
         }
 
     try:
+        # The lookup above is best-effort, so the client may not exist yet.
+        client = await get_okta_client(manager)
         _, _, err = await client.delete_email_domain(email_domain_id)
 
         if err:
@@ -465,7 +467,7 @@ async def delete_email_domain(
 async def verify_email_domain(
     ctx: Context,
     email_domain_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Verify an email domain by checking its DNS records.
 
     Okta looks up the DNS records that were returned when the domain was

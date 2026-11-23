@@ -49,7 +49,8 @@ class TestProfileWithOnly:
     def test_sdk_from_dict_nulls_omitted_fields(self):
         """The SDK pitfall the helper avoids."""
         profile = UpdateUserRequest.from_dict({"profile": {"title": "Engineer"}}).to_dict()["profile"]
-        assert "firstName" in profile and profile["firstName"] is None
+        assert "firstName" in profile
+        assert profile["firstName"] is None
 
 
 @pytest.mark.asyncio

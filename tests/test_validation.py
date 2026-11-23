@@ -183,7 +183,8 @@ class TestValidateOsVersion:
     def test_two_component_version_asks_rather_than_guesses(self):
         error = _validate_os_version_string("13.3", "MACOS") or ""
         assert "Incomplete OS version" in error
-        assert "13.3.0" in error and "Do NOT assume" in error
+        assert "13.3.0" in error
+        assert "Do NOT assume" in error
 
     @pytest.mark.parametrize("version", ["sonoma", "14.x", "v14.2.1", "14..1"])
     def test_junk_rejected(self, version):

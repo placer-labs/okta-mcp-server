@@ -6,7 +6,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Any
 
 import okta.models as okta_models
 from fastmcp import Context
@@ -34,7 +34,7 @@ from okta_mcp_server.utils.validation import validate_ids
 
 _APP_LOOKUP_CONCURRENCY = 5
 
-_POLICY_RULE_MODEL_MAP: Dict[str, Any] = {
+_POLICY_RULE_MODEL_MAP: dict[str, Any] = {
     "SIGN_ON": okta_models.OktaSignOnPolicyRule,
     "PASSWORD": okta_models.PasswordPolicyRule,
     "ACCESS_POLICY": okta_models.AccessPolicyRule,
@@ -47,7 +47,7 @@ _POLICY_RULE_MODEL_MAP: Dict[str, Any] = {
 }
 
 
-def _build_policy_rule_model(rule_data: Dict[str, Any]) -> Any:
+def _build_policy_rule_model(rule_data: dict[str, Any]) -> Any:
     model_cls = _POLICY_RULE_MODEL_MAP.get(str(rule_data.get("type", "")).upper(), okta_models.PolicyRule)
     return model_cls.from_dict(rule_data)
 
@@ -56,10 +56,10 @@ def _build_policy_rule_model(rule_data: Dict[str, Any]) -> Any:
 async def list_policies(
     ctx: Context,
     type: str,
-    status: Optional[str] = None,
-    q: Optional[str] = None,
-    limit: Optional[int] = None,
-    after: Optional[str] = None,
+    status: str | None = None,
+    q: str | None = None,
+    limit: int | None = None,
+    after: str | None = None,
     fetch_all: bool = False,
 ):
     """List all the policies from the Okta organization with pagination support.
@@ -218,8 +218,8 @@ async def list_policy_apps(ctx: Context, policy_id: str):
 
         semaphore = asyncio.Semaphore(_APP_LOOKUP_CONCURRENCY)
 
-        async def _describe(app_id: str) -> Dict[str, Any]:
-            entry: Dict[str, Any] = {"id": app_id}
+        async def _describe(app_id: str) -> dict[str, Any]:
+            entry: dict[str, Any] = {"id": app_id}
             try:
                 async with semaphore:
                     app, _, app_err = await okta_client.get_application(app_id)
@@ -246,7 +246,7 @@ async def list_policy_apps(ctx: Context, policy_id: str):
 
 
 @mcp.tool()
-async def create_policy(ctx: Context, policy_data: Dict[str, Any]):
+async def create_policy(ctx: Context, policy_data: dict[str, Any]):
     """Create a new policy.
 
     Parameters:
@@ -293,7 +293,7 @@ async def create_policy(ctx: Context, policy_data: Dict[str, Any]):
 
 @mcp.tool()
 @validate_ids("policy_id", error_return_type="dict")
-async def update_policy(ctx: Context, policy_id: str, policy_data: Dict[str, Any]):
+async def update_policy(ctx: Context, policy_id: str, policy_data: dict[str, Any]):
     """Update an existing policy.
 
     Parameters:
@@ -505,7 +505,7 @@ async def get_policy_rule(ctx: Context, policy_id: str, rule_id: str):
 
 @mcp.tool()
 @validate_ids("policy_id", error_return_type="dict")
-async def create_policy_rule(ctx: Context, policy_id: str, rule_data: Dict[str, Any]):
+async def create_policy_rule(ctx: Context, policy_id: str, rule_data: dict[str, Any]):
     """Create a new rule for a policy.
 
     Parameters:
@@ -550,7 +550,7 @@ async def create_policy_rule(ctx: Context, policy_id: str, rule_data: Dict[str, 
 
 @mcp.tool()
 @validate_ids("policy_id", "rule_id", error_return_type="dict")
-async def update_policy_rule(ctx: Context, policy_id: str, rule_id: str, rule_data: Dict[str, Any]):
+async def update_policy_rule(ctx: Context, policy_id: str, rule_id: str, rule_data: dict[str, Any]):
     """Update an existing policy rule.
 
     Parameters:

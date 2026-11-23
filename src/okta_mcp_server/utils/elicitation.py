@@ -160,12 +160,11 @@ async def elicit_or_fallback(
             confirmed = getattr(result.data, "confirm", False)
             logger.info(f"Elicitation accepted — confirm={confirmed}")
             return ElicitationOutcome(confirmed=confirmed, used_elicitation=True)
-        elif isinstance(result, DeclinedElicitation):
+        if isinstance(result, DeclinedElicitation):
             logger.info("Elicitation declined by user")
             return ElicitationOutcome(confirmed=False, used_elicitation=True)
-        else:
-            logger.warning(f"Elicitation returned unexpected result: {result}")
-            return ElicitationOutcome(confirmed=False, used_elicitation=True)
+        logger.warning(f"Elicitation returned unexpected result: {result}")
+        return ElicitationOutcome(confirmed=False, used_elicitation=True)
 
     except MCPError as exc:
         if exc.error.code == METHOD_NOT_FOUND:

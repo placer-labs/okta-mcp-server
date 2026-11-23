@@ -6,7 +6,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 import asyncio
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from fastmcp import Context
@@ -29,7 +29,7 @@ def _is_auth_error(err: Any) -> bool:
     return (getattr(err, "status", None) or getattr(err, "status_code", None)) in (401, 403, "401", "403")
 
 
-def _next_cursor(page: Any, response: Any) -> Optional[str]:
+def _next_cursor(page: Any, response: Any) -> str | None:
     """Cursor from the Link header, falling back to the body's _links.next.href."""
     cursor = extract_after_cursor(response)
     if cursor:
@@ -40,7 +40,7 @@ def _next_cursor(page: Any, response: Any) -> Optional[str]:
     return (parse_qs(urlparse(href).query).get("after") or [None])[0]
 
 
-async def _user_login(client: Any, user_id: str) -> Optional[str]:
+async def _user_login(client: Any, user_id: str) -> str | None:
     """Best-effort login lookup; needs okta.users.read, so failures just omit it."""
     try:
         user, _, err = await client.get_user(user_id)
@@ -77,11 +77,11 @@ async def list_admin_role_assignments(ctx: Context, max_users: int = 200):
     try:
         client = await get_okta_client(manager)
 
-        user_ids: List[str] = []
-        after: Optional[str] = None
+        user_ids: list[str] = []
+        after: str | None = None
         truncated = False
         while True:
-            params: Dict[str, Any] = {"limit": _PAGE_SIZE}
+            params: dict[str, Any] = {"limit": _PAGE_SIZE}
             if after:
                 params["after"] = after
             page, response, err = await client.list_users_with_role_assignments(**params)
@@ -105,11 +105,11 @@ async def list_admin_role_assignments(ctx: Context, max_users: int = 200):
 
         semaphore = asyncio.Semaphore(_CONCURRENCY)
 
-        async def _one(user_id: str) -> Dict[str, Any]:
+        async def _one(user_id: str) -> dict[str, Any]:
             async with semaphore:
                 roles, _, role_err = await client.list_assigned_roles_for_user(user_id)
                 login = await _user_login(client, user_id)
-            entry: Dict[str, Any] = {"userId": user_id}
+            entry: dict[str, Any] = {"userId": user_id}
             if login:
                 entry["login"] = login
             if role_err:
@@ -195,10 +195,10 @@ async def list_custom_roles(ctx: Context):
     try:
         client = await get_okta_client(manager)
 
-        roles: List[Any] = []
-        after: Optional[str] = None
+        roles: list[Any] = []
+        after: str | None = None
         while True:
-            params: Dict[str, Any] = {"after": after} if after else {}
+            params: dict[str, Any] = {"after": after} if after else {}
             page, response, err = await client.list_roles(**params)
             if err:
                 logger.error(f"Okta API error while listing custom roles: {err}")
@@ -213,7 +213,7 @@ async def list_custom_roles(ctx: Context):
 
         semaphore = asyncio.Semaphore(_CONCURRENCY)
 
-        async def _one(role: Any) -> Dict[str, Any]:
+        async def _one(role: Any) -> dict[str, Any]:
             role_id = str(getattr(role, "id", ""))
             async with semaphore:
                 perms, _, perm_err = await client.list_role_permissions(role_id)

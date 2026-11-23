@@ -5,7 +5,6 @@
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-from typing import Optional
 
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
@@ -61,11 +60,11 @@ def _profile_with_only(profile: dict) -> UserProfile:
 async def list_users(
     ctx: Context,
     search: str = "",
-    filter: Optional[str] = None,
-    q: Optional[str] = None,
+    filter: str | None = None,
+    q: str | None = None,
     fetch_all: bool = False,
-    after: Optional[str] = None,
-    limit: Optional[int] = None,
+    after: str | None = None,
+    limit: int | None = None,
 ):
     """List all the users from the Okta organization with pagination support.
     If search, filter, or q is specified, it will list only those users that satisfy the condition.
@@ -143,9 +142,8 @@ async def list_users(
             return create_paginated_response(
                 summarize_users(all_users), response, fetch_all_used=True, pagination_info=pagination_info
             )
-        else:
-            logger.info(f"Successfully retrieved {len(users)} users")
-            return create_paginated_response(summarize_users(users), response, fetch_all_used=fetch_all)
+        logger.info(f"Successfully retrieved {len(users)} users")
+        return create_paginated_response(summarize_users(users), response, fetch_all_used=fetch_all)
 
     except ToolError:
         raise
@@ -156,7 +154,7 @@ async def list_users(
 
 @mcp.tool()
 @validate_ids("user_id")
-async def get_user_profile_attributes(user_id: Optional[str] = None, ctx: Context | None = None):
+async def get_user_profile_attributes(user_id: str | None = None, ctx: Context | None = None):
     """List the user profile attributes supported by your Okta org.
 
     Use this to check whether a profile attribute name is valid before filtering or

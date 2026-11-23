@@ -52,7 +52,7 @@ Notes:
       ``EXTERNALLY_HOSTED`` redirects to the URL you provide.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastmcp import Context
 from loguru import logger
@@ -111,10 +111,10 @@ def _serialize(obj) -> Any:
 
 
 def _build_csp(
-    mode: Optional[str],
-    report_uri: Optional[str],
-    src_list: Optional[List[str]],
-) -> Optional[ContentSecurityPolicySetting]:
+    mode: str | None,
+    report_uri: str | None,
+    src_list: list[str] | None,
+) -> ContentSecurityPolicySetting | None:
     """Return a ContentSecurityPolicySetting only when at least one param is set."""
     if mode is None and report_uri is None and src_list is None:
         return None
@@ -126,10 +126,10 @@ def _build_csp(
 
 
 def _build_sign_in_page(
-    page_content: Optional[str],
-    widget_version: Optional[str],
-    widget_customizations: Optional[Dict[str, Any]],
-    csp: Optional[ContentSecurityPolicySetting],
+    page_content: str | None,
+    widget_version: str | None,
+    widget_customizations: dict[str, Any] | None,
+    csp: ContentSecurityPolicySetting | None,
 ) -> SignInPage:
     """Assemble a SignInPage model from the individual tool parameters."""
     # Only construct the widget-customizations object when the caller actually
@@ -156,8 +156,8 @@ def _build_sign_in_page(
 async def get_error_page_resources(
     ctx: Context,
     brand_id: str,
-    expand: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    expand: list[str] | None = None,
+) -> dict[str, Any]:
     """Retrieve the error page sub-resource links for a brand.
 
     Returns navigation links (``_links``) for the customized, default, and
@@ -209,7 +209,7 @@ async def get_error_page_resources(
 async def get_customized_error_page(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve the customized error page for a brand.
 
     The customized error page is what end-users see in the live environment
@@ -253,11 +253,11 @@ async def get_customized_error_page(
 async def replace_customized_error_page(
     ctx: Context,
     brand_id: str,
-    page_content: Optional[str] = None,
-    csp_mode: Optional[str] = None,
-    csp_report_uri: Optional[str] = None,
-    csp_src_list: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    page_content: str | None = None,
+    csp_mode: str | None = None,
+    csp_report_uri: str | None = None,
+    csp_src_list: list[str] | None = None,
+) -> dict[str, Any]:
     """Replace (or create) the customized error page for a brand.
 
     Sets the HTML that appears in the live environment when an error occurs.
@@ -316,7 +316,7 @@ async def replace_customized_error_page(
 async def delete_customized_error_page(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete the customized error page for a brand.
 
     Removes the customized error page so the Okta default error page is shown
@@ -375,7 +375,7 @@ async def delete_customized_error_page(
 async def get_default_error_page(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve the default (Okta-provided) error page for a brand.
 
     The default error page is shown when no customized error page exists. It
@@ -423,7 +423,7 @@ async def get_default_error_page(
 async def get_preview_error_page(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve the preview error page for a brand.
 
     The preview page is a sandbox for testing error page changes before they
@@ -466,11 +466,11 @@ async def get_preview_error_page(
 async def replace_preview_error_page(
     ctx: Context,
     brand_id: str,
-    page_content: Optional[str] = None,
-    csp_mode: Optional[str] = None,
-    csp_report_uri: Optional[str] = None,
-    csp_src_list: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    page_content: str | None = None,
+    csp_mode: str | None = None,
+    csp_report_uri: str | None = None,
+    csp_src_list: list[str] | None = None,
+) -> dict[str, Any]:
     """Replace (or create) the preview error page for a brand.
 
     Sets the HTML for the error page preview environment. Use this to test
@@ -526,7 +526,7 @@ async def replace_preview_error_page(
 async def delete_preview_error_page(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete the preview error page for a brand.
 
     Removes the preview error page. The preview environment will fall back to
@@ -582,8 +582,8 @@ async def delete_preview_error_page(
 async def get_sign_in_page_resources(
     ctx: Context,
     brand_id: str,
-    expand: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    expand: list[str] | None = None,
+) -> dict[str, Any]:
     """Retrieve the sign-in page sub-resource links for a brand.
 
     Returns navigation links (``_links``) for the customized, default, and
@@ -635,7 +635,7 @@ async def get_sign_in_page_resources(
 async def get_customized_sign_in_page(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve the customized sign-in page for a brand.
 
     The customized sign-in page is what end-users see in the live environment.
@@ -679,13 +679,13 @@ async def get_customized_sign_in_page(
 async def replace_customized_sign_in_page(
     ctx: Context,
     brand_id: str,
-    page_content: Optional[str] = None,
-    widget_version: Optional[str] = None,
-    widget_customizations: Optional[Dict[str, Any]] = None,
-    csp_mode: Optional[str] = None,
-    csp_report_uri: Optional[str] = None,
-    csp_src_list: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    page_content: str | None = None,
+    widget_version: str | None = None,
+    widget_customizations: dict[str, Any] | None = None,
+    csp_mode: str | None = None,
+    csp_report_uri: str | None = None,
+    csp_src_list: list[str] | None = None,
+) -> dict[str, Any]:
     """Replace (or create) the customized sign-in page for a brand.
 
     Sets the HTML, widget version, and widget behaviour that appear in the
@@ -757,7 +757,7 @@ async def replace_customized_sign_in_page(
 async def delete_customized_sign_in_page(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete the customized sign-in page for a brand.
 
     Removes the customized sign-in page so the Okta default sign-in page is
@@ -817,7 +817,7 @@ async def delete_customized_sign_in_page(
 async def get_default_sign_in_page(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve the default (Okta-provided) sign-in page for a brand.
 
     The default sign-in page is shown when no customized page exists. It
@@ -867,7 +867,7 @@ async def get_default_sign_in_page(
 async def get_preview_sign_in_page(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve the preview sign-in page for a brand.
 
     The preview page is a sandbox for testing sign-in page changes before
@@ -911,13 +911,13 @@ async def get_preview_sign_in_page(
 async def replace_preview_sign_in_page(
     ctx: Context,
     brand_id: str,
-    page_content: Optional[str] = None,
-    widget_version: Optional[str] = None,
-    widget_customizations: Optional[Dict[str, Any]] = None,
-    csp_mode: Optional[str] = None,
-    csp_report_uri: Optional[str] = None,
-    csp_src_list: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    page_content: str | None = None,
+    widget_version: str | None = None,
+    widget_customizations: dict[str, Any] | None = None,
+    csp_mode: str | None = None,
+    csp_report_uri: str | None = None,
+    csp_src_list: list[str] | None = None,
+) -> dict[str, Any]:
     """Replace (or create) the preview sign-in page for a brand.
 
     Sets the HTML, widget version, and widget behaviour for the sign-in page
@@ -978,7 +978,7 @@ async def replace_preview_sign_in_page(
 async def delete_preview_sign_in_page(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete the preview sign-in page for a brand.
 
     Removes the preview sign-in page. The preview environment will fall back
@@ -1035,7 +1035,7 @@ async def delete_preview_sign_in_page(
 async def list_sign_in_widget_versions(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """List all available Okta Sign-In Widget versions for a brand.
 
     Returns the version strings that can be used in the ``widget_version``
@@ -1092,7 +1092,7 @@ async def list_sign_in_widget_versions(
 async def get_sign_out_page_settings(
     ctx: Context,
     brand_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Retrieve the sign-out page settings for a brand.
 
     Returns the current sign-out page configuration, which controls where
@@ -1140,8 +1140,8 @@ async def replace_sign_out_page_settings(
     ctx: Context,
     brand_id: str,
     type: str,
-    url: Optional[str] = None,
-) -> Dict[str, Any]:
+    url: str | None = None,
+) -> dict[str, Any]:
     """Replace the sign-out page settings for a brand.
 
     Controls where users are redirected after they sign out. Set

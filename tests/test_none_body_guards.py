@@ -106,9 +106,8 @@ def _assert_error_dict(result, *, must_contain: str) -> None:
     that references the follow-up tool the caller should use."""
     assert isinstance(result, dict), f"Expected dict from None-body guard, got {type(result).__name__}: {result!r}"
     assert "error" in result, f"Expected 'error' key, got: {result!r}"
-    assert isinstance(result["error"], str) and result["error"], (
-        f"'error' must be a non-empty string, got: {result['error']!r}"
-    )
+    assert isinstance(result["error"], str), f"'error' must be a string, got: {result['error']!r}"
+    assert result["error"], "'error' must not be empty"
     assert must_contain in result["error"], (
         f"Expected error message to reference {must_contain!r}, got: {result['error']!r}"
     )
@@ -271,7 +270,8 @@ class TestEmailDomainsNoneBodyGuards:
 
         assert isinstance(result, dict)
         assert "error" in result
-        assert isinstance(result["error"], str) and result["error"]
+        assert isinstance(result["error"], str)
+        assert result["error"]
         # Message should tell the caller how to confirm the domain state.
         assert "list_email_domains" in result["error"] or "get_email_domain" in result["error"]
 
@@ -329,7 +329,8 @@ class TestEmailDomainsNoneBodyGuards:
 
         assert isinstance(result, dict)
         assert "error" in result
-        assert isinstance(result["error"], str) and result["error"]
+        assert isinstance(result["error"], str)
+        assert result["error"]
 
 
 class TestThemesNoneBodyGuards:
@@ -477,7 +478,8 @@ class TestGroupsNoneBodyGuards:
             await get_group(ctx=ctx_no_elicitation, group_id=GROUP_ID)
         result = [{"error": str(exc_info.value)}]
 
-        assert isinstance(result, list) and len(result) == 1
+        assert isinstance(result, list)
+        assert len(result) == 1
         _assert_error_dict(result[0], must_contain="list_groups()")
         assert GROUP_ID in result[0]["error"]
 
@@ -492,7 +494,8 @@ class TestGroupsNoneBodyGuards:
             await create_group(ctx=ctx_no_elicitation, profile={"name": "Engineering"})
         result = [{"error": str(exc_info.value)}]
 
-        assert isinstance(result, list) and len(result) == 1
+        assert isinstance(result, list)
+        assert len(result) == 1
         _assert_error_dict(result[0], must_contain="list_groups()")
         assert "exception" not in result[0], (
             "create_group must not crash with AttributeError on group.id when the SDK returns (None, response, None)."
@@ -509,7 +512,8 @@ class TestGroupsNoneBodyGuards:
             await update_group(ctx=ctx_no_elicitation, group_id=GROUP_ID, profile={"name": "Engineering"})
         result = [{"error": str(exc_info.value)}]
 
-        assert isinstance(result, list) and len(result) == 1
+        assert isinstance(result, list)
+        assert len(result) == 1
         _assert_error_dict(result[0], must_contain="get_group()")
         assert GROUP_ID in result[0]["error"]
 
@@ -532,7 +536,8 @@ class TestUsersNoneBodyGuards:
             )
         result = [{"error": str(exc_info.value)}]
 
-        assert isinstance(result, list) and len(result) == 1
+        assert isinstance(result, list)
+        assert len(result) == 1
         _assert_error_dict(result[0], must_contain="list_users()")
         assert "exception" not in result[0], (
             "create_user must not crash with AttributeError on user.id when the SDK returns (None, response, None)."
@@ -549,7 +554,8 @@ class TestUsersNoneBodyGuards:
             await update_user(ctx=ctx_no_elicitation, user_id=USER_ID, profile={"firstName": "Jane"})
         result = [{"error": str(exc_info.value)}]
 
-        assert isinstance(result, list) and len(result) == 1
+        assert isinstance(result, list)
+        assert len(result) == 1
         _assert_error_dict(result[0], must_contain="get_user()")
         assert USER_ID in result[0]["error"]
 

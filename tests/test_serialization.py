@@ -24,7 +24,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import ClassVar
 
@@ -67,7 +67,7 @@ def test_str_enum_mixin_unwrapped_to_value():
     described in issue #14.
     """
 
-    class Color(str, Enum):
+    class Color(str, Enum):  # ruff: ignore[replace-str-enum] - the str mixin is what's under test
         RED = "red"
         BLUE = "blue"
 
@@ -165,7 +165,7 @@ def test_datetime_in_pydantic_model_serialized_rfc3339():
     class Stamped(BaseModel):
         when: datetime
 
-    model = Stamped(when=datetime(2024, 1, 2, 3, 4, 5, tzinfo=timezone.utc))
+    model = Stamped(when=datetime(2024, 1, 2, 3, 4, 5, tzinfo=UTC))
     result = to_jsonable(model)
 
     assert result["when"] == "2024-01-02T03:04:05Z"
@@ -189,7 +189,7 @@ def test_custom_pages_serialize_emits_rfc3339_datetime():
     class PageWithTimestamp(BaseModel):
         when: datetime
 
-    model = PageWithTimestamp(when=datetime(2024, 1, 2, 3, 4, 5, tzinfo=timezone.utc))
+    model = PageWithTimestamp(when=datetime(2024, 1, 2, 3, 4, 5, tzinfo=UTC))
     serialized = _serialize(model)
     # After the local _serialize, the outer boundary runs to_jsonable — but
     # since serialized is already a plain dict, we can assert directly.

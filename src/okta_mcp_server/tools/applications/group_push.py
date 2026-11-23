@@ -5,7 +5,7 @@
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
@@ -16,7 +16,7 @@ from okta_mcp_server.utils.client import _resolve_manager, get_okta_client
 from okta_mcp_server.utils.serialization import describe_exception
 
 
-def _summarize_mapping(m: Any) -> Dict[str, Any]:
+def _summarize_mapping(m: Any) -> dict[str, Any]:
     """Flatten a GroupPushMapping to the fields worth reading.
 
     The target group's *name* is not a field on the mapping — only its id — so the
@@ -48,10 +48,10 @@ def _summarize_mapping(m: Any) -> Dict[str, Any]:
 async def list_group_push_mappings(
     ctx: Context,
     app_id: str,
-    source_group_id: Optional[str] = None,
-    status: Optional[str] = None,
-    after: Optional[str] = None,
-    limit: Optional[int] = None,
+    source_group_id: str | None = None,
+    status: str | None = None,
+    after: str | None = None,
+    limit: int | None = None,
 ):
     """List the group push mappings on an application.
 
@@ -83,7 +83,7 @@ async def list_group_push_mappings(
     try:
         client = await get_okta_client(manager)
 
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         if source_group_id:
             kwargs["source_group_id"] = source_group_id
         if status:
@@ -99,7 +99,7 @@ async def list_group_push_mappings(
             logger.error(f"Okta API error listing group push mappings for {app_id}: {err}")
             raise ToolError(f"Okta API error: {err}")
 
-        items: List[Dict[str, Any]] = [_summarize_mapping(m) for m in (mappings or [])]
+        items: list[dict[str, Any]] = [_summarize_mapping(m) for m in (mappings or [])]
         logger.info(f"Retrieved {len(items)} group push mappings for app {app_id}")
         return {"app_id": app_id, "mappings": items, "count": len(items)}
 

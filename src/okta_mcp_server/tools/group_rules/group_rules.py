@@ -5,7 +5,6 @@
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-from typing import Optional
 
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
@@ -28,11 +27,11 @@ from okta_mcp_server.utils.validation import validate_ids
 async def list_group_rules(
     ctx: Context,
     search: str = "",
-    status: Optional[str] = None,
-    expand: Optional[str] = None,
+    status: str | None = None,
+    expand: str | None = None,
     fetch_all: bool = False,
-    after: Optional[str] = None,
-    limit: Optional[int] = None,
+    after: str | None = None,
+    limit: int | None = None,
 ):
     """List group rules from the Okta organization with pagination support.
     Group rules define automatic membership rules that assign users to groups based on attribute conditions.
@@ -116,9 +115,8 @@ async def list_group_rules(
             return create_paginated_response(
                 summarize_group_rules(all_rules), response, fetch_all_used=True, pagination_info=pagination_info
             )
-        else:
-            logger.info(f"Successfully retrieved {len(rules)} group rules")
-            return create_paginated_response(summarize_group_rules(rules), response, fetch_all_used=fetch_all)
+        logger.info(f"Successfully retrieved {len(rules)} group rules")
+        return create_paginated_response(summarize_group_rules(rules), response, fetch_all_used=fetch_all)
 
     except ToolError:
         raise
@@ -129,7 +127,7 @@ async def list_group_rules(
 
 @mcp.tool()
 @validate_ids("rule_id")
-async def get_group_rule(rule_id: str, ctx: Context | None = None, expand: Optional[str] = None):
+async def get_group_rule(rule_id: str, ctx: Context | None = None, expand: str | None = None):
     """Get a group rule by ID from the Okta organization.
 
     This tool retrieves a group rule by its ID from the Okta organization.

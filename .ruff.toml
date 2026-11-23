@@ -28,11 +28,28 @@ select = ["F",      # Pyflakes
           "E",      # pycodestyle
           "I",      # isort
           "RUF",    # Ruff-specific rules
-          "S"]      # flake8-bandit
+          "S",      # flake8-bandit
+          "B",      # flake8-bugbear
+          "ASYNC",  # blocking calls in async code
+          "UP",     # pyupgrade
+          "SIM",    # flake8-simplify
+          "RET",    # flake8-return
+          "PIE",    # flake8-pie
+          "C4",     # flake8-comprehensions
+          "PERF",   # Perflint
+          "FURB",   # refurb
+          "PTH",    # use pathlib
+          "PT",     # flake8-pytest-style
+          "LOG",    # flake8-logging
+          "DTZ",    # naive datetimes
+          "T20",    # print statements
+          "ISC"]    # implicit string concatenation
 
-# `ruff format` handles line length for code; long lines that remain are
-# license-header boilerplate and other intentionally untouched text.
-ignore = ["line-too-long"]
+ignore = [
+    # `ruff format` handles line length for code; long lines that remain are
+    # license-header boilerplate and other intentionally untouched text.
+    "line-too-long",
+]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
@@ -54,4 +71,7 @@ docstring-code-format = true
 [lint.per-file-ignores]
 # Ported verbatim from upstream; keep its naming and docstrings so syncs merge cleanly.
 "src/okta_mcp_server/tools/customization/**" = ["ambiguous-unicode-character-string", "ambiguous-unicode-character-docstring", "ambiguous-unicode-character-comment", "used-dummy-variable"]
+# Phase 1 of validate_file_path normalizes with abspath on purpose: it must not
+# follow symlinks. Path.resolve() would, so os.path stays.
+"src/okta_mcp_server/utils/validation.py" = ["os-path-abspath"]
 "tests/**" = ["assert", "hardcoded-password-string", "hardcoded-password-func-arg", "hardcoded-temp-file"]

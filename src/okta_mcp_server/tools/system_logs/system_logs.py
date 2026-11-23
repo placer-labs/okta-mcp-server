@@ -6,7 +6,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 import re
-from typing import Any, Optional
+from typing import Any
 
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
@@ -35,7 +35,7 @@ try:
 
     # 1. LogSecurityContext.user_behaviors: declared List[StrictStr] but Behavior
     #    Detection events return List[dict].
-    _user_behaviors_type = _typing.Optional[_typing.List[_typing.Any]]
+    _user_behaviors_type = list[_typing.Any] | None
     _LogSecurityContext.__annotations__["user_behaviors"] = _user_behaviors_type
     if "user_behaviors" in _LogSecurityContext.model_fields:
         _LogSecurityContext.model_fields["user_behaviors"].annotation = _user_behaviors_type
@@ -43,7 +43,7 @@ try:
 
     # 2. LogOutcome.reason: declared with MaxLen(255) but real values like
     #    "Password requirements were not met..." routinely exceed that.
-    _reason_type = _typing.Optional[str]
+    _reason_type = str | None
     _LogOutcome.__annotations__["reason"] = _reason_type
     if "reason" in _LogOutcome.model_fields:
         _LogOutcome.model_fields["reason"].annotation = _reason_type
@@ -65,7 +65,7 @@ _MFA_CHALLENGE_EVENT_TYPE_PATTERN = re.compile(
 )
 
 
-def check_logs_scope_error(err_or_exc: Any) -> Optional[str]:
+def check_logs_scope_error(err_or_exc: Any) -> str | None:
     """Return a user-friendly scope-error message for 403 / insufficient_scope, else None."""
     err_str = str(err_or_exc)
     err_status = (
@@ -92,7 +92,7 @@ def check_logs_scope_error(err_or_exc: Any) -> Optional[str]:
     return None
 
 
-def _add_failure_deny_reminder(result: dict, filter_str: Optional[str]) -> None:
+def _add_failure_deny_reminder(result: dict, filter_str: str | None) -> None:
     """Mutate result in-place: add a reminder when only FAILURE or only DENY was queried."""
     fs = filter_str or ""
     has_failure = bool(re.search(r'outcome\.result\s+eq\s+["\']FAILURE["\']', fs, re.IGNORECASE))
@@ -115,12 +115,12 @@ def _add_failure_deny_reminder(result: dict, filter_str: Optional[str]) -> None:
 async def get_logs(
     ctx: Context | None = None,
     fetch_all: bool = False,
-    after: Optional[str] = None,
-    limit: Optional[int] = None,
-    since: Optional[str] = None,
-    until: Optional[str] = None,
-    filter: Optional[str] = None,
-    q: Optional[str] = None,
+    after: str | None = None,
+    limit: int | None = None,
+    since: str | None = None,
+    until: str | None = None,
+    filter: str | None = None,
+    q: str | None = None,
 ):
     """Retrieve system logs from the Okta organization with pagination support.
 
@@ -243,7 +243,7 @@ async def get_logs(
 
         if log_count > 0:
             logger.debug(f"First log entry timestamp: {logs[0].published if hasattr(logs[0], 'published') else 'N/A'}")
-            logger.debug(f"Log types found: {set(log.event_type for log in logs[:10] if hasattr(log, 'event_type'))}")
+            logger.debug(f"Log types found: { {log.event_type for log in logs[:10] if hasattr(log, 'event_type')} }")
 
         if fetch_all and has_next_page(response):
             logger.info(f"fetch_all=True, auto-paginating from initial {log_count} log entries")
@@ -271,5 +271,5 @@ async def get_logs(
         logger.error(f"Exception while retrieving system logs: {type(e).__name__}: {describe_exception(e)}")
         scope_msg = check_logs_scope_error(e)
         if scope_msg:
-            raise ToolError(scope_msg)
+            raise ToolError(scope_msg) from e
         raise ToolError(f"Exception: {describe_exception(e)}") from e

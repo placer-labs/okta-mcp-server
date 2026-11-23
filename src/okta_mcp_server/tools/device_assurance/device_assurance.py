@@ -13,8 +13,8 @@ attributes a platform does not accept: a policy created with the wrong shape com
 back looking fine while enforcing nothing.
 """
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import okta.models as okta_models
 from fastmcp import Context
@@ -56,7 +56,7 @@ _OS_VERSION_IN_POLICY_DATA_ERROR = (
 )
 
 
-def _platform_attributes(platform: str) -> List[str]:
+def _platform_attributes(platform: str) -> list[str]:
     """Return the compliance attributes the SDK model accepts for *platform*."""
     model = _PLATFORM_MODELS.get((platform or "").upper())
     if model is None:
@@ -84,7 +84,7 @@ def _raise_okta_error(operation: str, err: Any) -> None:
     raise ToolError(f"Okta API error: {err}")
 
 
-def _build_policy_model(raw: Dict[str, Any]) -> Any:
+def _build_policy_model(raw: dict[str, Any]) -> Any:
     """Build a DeviceAssurance model from *raw*, raising ValueError on anything the SDK would drop."""
     platform = (raw.get("platform") or "").upper()
     if not platform:
@@ -123,7 +123,7 @@ def _build_policy_model(raw: Dict[str, Any]) -> Any:
     return model
 
 
-def _attribute_status(policy: Dict[str, Any]) -> Dict[str, str]:
+def _attribute_status(policy: dict[str, Any]) -> dict[str, str]:
     """Mark each attribute the platform supports as configured or not_configured.
 
     Without this, an absent attribute reads as "checked and compliant" when it
@@ -135,7 +135,7 @@ def _attribute_status(policy: Dict[str, Any]) -> Dict[str, str]:
     }
 
 
-def _enrich(policy: Dict[str, Any]) -> Dict[str, Any]:
+def _enrich(policy: dict[str, Any]) -> dict[str, Any]:
     policy["securityAttributeStatus"] = _attribute_status(policy)
     return policy
 
@@ -156,24 +156,22 @@ _IMPLICATIONS = {
 }
 
 
-def _policy_diff(before: Dict[str, Any], after: Dict[str, Any]) -> List[Dict[str, Any]]:
-    changes = []
-    for key in sorted((set(before) | set(after)) - _DIFF_SKIP_KEYS):
-        if before.get(key) != after.get(key):
-            changes.append(
-                {
-                    "attribute": key,
-                    "before": before.get(key),
-                    "after": after.get(key),
-                    "implication": _IMPLICATIONS.get(key, f"The '{key}' setting has been modified."),
-                }
-            )
-    return changes
+def _policy_diff(before: dict[str, Any], after: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "attribute": key,
+            "before": before.get(key),
+            "after": after.get(key),
+            "implication": _IMPLICATIONS.get(key, f"The '{key}' setting has been modified."),
+        }
+        for key in sorted((set(before) | set(after)) - _DIFF_SKIP_KEYS)
+        if before.get(key) != after.get(key)
+    ]
 
 
-def _retrieved_note() -> Dict[str, str]:
+def _retrieved_note() -> dict[str, str]:
     return {
-        "retrieved_at": datetime.now(timezone.utc).isoformat(),
+        "retrieved_at": datetime.now(UTC).isoformat(),
         "note": (
             "Policies may have changed since this list was fetched. Call list_device_assurance_policies again "
             "before resolving a policy name to an ID."
@@ -183,7 +181,7 @@ def _retrieved_note() -> Dict[str, str]:
 
 @mcp.tool()
 @validate_os_version_params("version_threshold")
-async def list_device_assurance_policies(ctx: Context | None = None, version_threshold: Optional[str] = None):
+async def list_device_assurance_policies(ctx: Context | None = None, version_threshold: str | None = None):
     """List all Device Assurance Policies in the Okta organization.
 
     Use this to audit which policies exist, compare OS version requirements, or find
@@ -224,7 +222,7 @@ async def list_device_assurance_policies(ctx: Context | None = None, version_thr
             logger.error(f"Okta API error while listing device assurance policies: {err}")
             _raise_okta_error("list", err)
 
-        result: Dict[str, Any] = dict(_retrieved_note())
+        result: dict[str, Any] = dict(_retrieved_note())
 
         if policies is None:
             status = getattr(response, "status_code", None) or getattr(response, "status", None)
@@ -299,7 +297,7 @@ async def get_device_assurance_policy(ctx: Context, device_assurance_id: str):
 @mcp.tool()
 @validate_os_version_params("user_stated_os_version")
 async def create_device_assurance_policy(
-    ctx: Context, policy_data: Dict[str, Any], user_stated_os_version: Optional[str] = None
+    ctx: Context, policy_data: dict[str, Any], user_stated_os_version: str | None = None
 ):
     """Create a new Device Assurance Policy.
 
@@ -385,8 +383,8 @@ async def create_device_assurance_policy(
 async def replace_device_assurance_policy(
     ctx: Context,
     device_assurance_id: str,
-    policy_data: Dict[str, Any],
-    user_stated_os_version: Optional[str] = None,
+    policy_data: dict[str, Any],
+    user_stated_os_version: str | None = None,
 ):
     """Replace (fully update) an existing Device Assurance Policy.
 
