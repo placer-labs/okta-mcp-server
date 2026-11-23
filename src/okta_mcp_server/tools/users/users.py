@@ -10,6 +10,9 @@ from typing import Optional
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
 from loguru import logger
+from okta.models.create_user_request import CreateUserRequest
+from okta.models.update_user_request import UpdateUserRequest
+from okta.models.user_profile import UserProfile
 
 from okta_mcp_server.server import mcp
 from okta_mcp_server.utils.caller import loggable_user_id, scrub_user_id
@@ -23,6 +26,35 @@ from okta_mcp_server.utils.pagination import (
 from okta_mcp_server.utils.serialization import describe_exception, none_body_error
 from okta_mcp_server.utils.summarize import summarize_groups, summarize_user, summarize_user_factors, summarize_users
 from okta_mcp_server.utils.validation import validate_ids
+
+
+def _profile_with_only(profile: dict) -> UserProfile:
+    """Build a UserProfile holding exactly the keys the caller passed.
+
+    Passing a plain dict lets the SDK drop custom attributes, and
+    ``UpdateUserRequest.from_dict`` marks every standard field as set, so the
+    omitted ones go out as JSON null and Okta clears them. Here standard
+    attributes (by field name or camelCase alias) become model fields and the
+    rest go in ``additional_properties``. A key the caller sets to None is kept,
+    so it still clears that attribute.
+    """
+    field_by_key: dict[str, str] = {}
+    for name, info in UserProfile.model_fields.items():
+        field_by_key[name] = name
+        if info.alias:
+            field_by_key[info.alias] = name
+
+    standard: dict = {}
+    custom: dict = {}
+    for key, value in profile.items():
+        if key in field_by_key:
+            standard[field_by_key[key]] = value
+        else:
+            custom[key] = value
+
+    user_profile = UserProfile(**standard)
+    user_profile.additional_properties = custom
+    return user_profile
 
 
 @mcp.tool()
@@ -336,8 +368,7 @@ async def create_user(profile: dict, activate: bool = True, ctx: Context | None 
 
     try:
         client = await get_okta_client(manager)
-        # Wrap the profile in a dict with 'profile' key as required by Okta SDK
-        user_data = {"profile": profile}
+        user_data = CreateUserRequest(profile=_profile_with_only(profile))
         logger.debug("Calling Okta API to create user")
 
         user, _, err = await client.create_user(user_data, activate)
@@ -369,11 +400,12 @@ async def create_user(profile: dict, activate: bool = True, ctx: Context | None 
 async def update_user(user_id: str, profile: dict, ctx: Context | None = None):
     """Update a user in the Okta organization.
 
-    This tool updates an existing user in the Okta organization with the provided profile.
+    Partial update: only the profile attributes you pass change, and the rest
+    are left as they are. Set an attribute to null to clear it.
 
     Parameters:
         user_id (str, required): The ID of the user to update.
-        profile (dict, required): The updated profile of the user.
+        profile (dict, required): The profile attributes to change.
 
     Returns:
         List containing the updated user details.
@@ -384,7 +416,7 @@ async def update_user(user_id: str, profile: dict, ctx: Context | None = None):
 
     try:
         client = await get_okta_client(manager)
-        user_data = {"profile": profile}
+        user_data = UpdateUserRequest(profile=_profile_with_only(profile))
         logger.debug(f"Calling Okta API to update user {loggable_user_id(user_id)}")
 
         user, _, err = await client.update_user(user_id, user_data)
