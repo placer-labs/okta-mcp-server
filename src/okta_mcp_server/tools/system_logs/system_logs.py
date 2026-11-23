@@ -55,8 +55,12 @@ except Exception as _patch_err:  # pragma: no cover - defensive
     logger.warning(f"Could not apply SDK v3 schema workarounds: {_patch_err}")
 
 _VALID_OUTCOME_RESULTS = {"SUCCESS", "FAILURE", "DENY", "ALLOW", "CHALLENGE", "UNKNOWN"}
-_MFA_EVENT_TYPE_PATTERN = re.compile(
-    r'eventType\s+eq\s+["\'].*(?:mfa|factor|verify|challenge|step.?up|authentication).*["\']',
+# MFA challenge / step-up prompts have no eventType of their own; they must be
+# queried with outcome.result eq "CHALLENGE". Factor lifecycle events
+# (user.mfa.factor.activate / deactivate / reset_all, ...) do have eventTypes
+# and must stay queryable, so match only challenge / step-up wording.
+_MFA_CHALLENGE_EVENT_TYPE_PATTERN = re.compile(
+    r'eventType\s+eq\s+["\'].*(?:challenge|step.?up).*["\']',
     re.IGNORECASE,
 )
 
@@ -129,9 +133,12 @@ async def get_logs(
         DENY    = blocked by sign-on policy (IP / device / policy violation).
         Skipping either silently misses an entire category of failures.
 
-    CRITICAL — MFA challenges:
-        Use filter='outcome.result eq "CHALLENGE"'. Do NOT filter by eventType for
-        MFA / step-up / factor verify queries — that returns the wrong slice.
+    CRITICAL — MFA challenges vs. MFA factor lifecycle:
+        - MFA challenge / step-up prompts during sign-in have no eventType: use
+          filter='outcome.result eq "CHALLENGE"'. Do NOT filter by eventType for these.
+        - MFA factor lifecycle events (enroll, activate, deactivate, reset) DO have
+          eventTypes: use e.g. filter='eventType eq "user.mfa.factor.deactivate"' or
+          filter='eventType eq "user.mfa.factor.reset_all"', not outcome.result.
 
     Parameters:
         fetch_all (bool, optional): If True, automatically fetch all pages of results. Default: False.
@@ -181,7 +188,7 @@ async def get_logs(
             limit = 100
 
     # Detect MFA-related eventType filters that should use outcome.result eq "CHALLENGE".
-    if filter and _MFA_EVENT_TYPE_PATTERN.search(filter):
+    if filter and _MFA_CHALLENGE_EVENT_TYPE_PATTERN.search(filter):
         has_challenge_filter = bool(re.search(r'outcome\.result\s+eq\s+["\']CHALLENGE["\']', filter, re.IGNORECASE))
         if not has_challenge_filter:
             return {
