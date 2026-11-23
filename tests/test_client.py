@@ -20,6 +20,7 @@ from okta_mcp_server.utils.client import get_okta_client
 def _build_manager_mock() -> MagicMock:
     manager = MagicMock(spec=OktaAuthManager)
     manager.org_url = "https://test.okta.com"
+    manager.keyring_service = "OktaAuthManager:https://test.okta.com:test-client"
     manager.authenticate = AsyncMock()
     return manager
 

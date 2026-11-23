@@ -18,7 +18,7 @@ import keyring
 from loguru import logger
 from okta.client import Client as OktaClient
 
-from okta_mcp_server.utils.auth.auth_manager import SERVICE_NAME, OktaAuthManager
+from okta_mcp_server.utils.auth.auth_manager import OktaAuthManager
 from okta_mcp_server.utils.okta_compat import apply_okta_sdk_leniency
 
 # Make the Okta SDK tolerant of live apps that omit fields its generated models
@@ -41,7 +41,7 @@ async def get_okta_client(manager: OktaAuthManager | None) -> OktaClient:
             logger.warning("Token is invalid or expired, re-authenticating")
             await manager.authenticate()
         # Read after the validity check so a token refreshed inside is_valid_token() is used.
-        api_token = keyring.get_password(SERVICE_NAME, "api_token")
+        api_token = keyring.get_password(manager.keyring_service, "api_token")
         org_url = manager.org_url
     else:
         # HTTP mode — OAuthProxy passes through the upstream Okta access token.
