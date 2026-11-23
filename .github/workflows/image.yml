@@ -1,0 +1,102 @@
+name: Image
+
+# Pull requests that can change the image build it, start it, check /health and
+# scan it with Trivy before merge. The weekly run rescans the published
+# placer-main image for CVEs disclosed since it was built.
+#
+# Only HIGH/CRITICAL vulnerabilities with a fix available fail the scan, so an
+# unpatched upstream CVE can't block every change.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/image.yml'
+      - '.github/install-trivy.sh'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'src/**'
+  schedule:
+    - cron: "0 7 * * 1"   # 7 am on Monday
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  # The default ghcr.io mirror rate-limits shared runners; ECR Public carries
+  # the same database.
+  TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
+  TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db:1
+
+jobs:
+  build-and-scan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read  # checkout
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          push: false
+          platforms: linux/amd64
+          provenance: false
+          cache-from: type=gha
+          tags: okta-mcp-server:pr
+
+      - name: Start the server and check /health
+        run: |
+          docker run -d --name okta-mcp \
+            -e OKTA_ORG_URL=https://example.okta.com \
+            -e OKTA_CLIENT_ID=ci \
+            -e OKTA_CLIENT_SECRET=ci-secret-not-real-0000000000000000 \
+            okta-mcp-server:pr
+          for _ in $(seq 1 30); do
+            if docker exec okta-mcp python -c \
+              "import json, urllib.request; r = json.load(urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)); assert r['status'] == 'healthy', r; print(r)"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "server did not become healthy" >&2
+          docker logs okta-mcp >&2
+          exit 1
+
+      - name: Install Trivy
+        run: ./.github/install-trivy.sh
+
+      - name: Scan the image
+        run: |
+          trivy image --scanners vuln okta-mcp-server:pr
+          trivy image --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1 okta-mcp-server:pr
+
+  scan-published:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read  # checkout
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Trivy
+        run: ./.github/install-trivy.sh
+
+      - name: Scan the placer image
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}:placer-main
+        run: |
+          trivy image --scanners vuln "$IMAGE"
+          trivy image --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1 "$IMAGE"
